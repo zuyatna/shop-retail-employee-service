@@ -18,14 +18,14 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		AppEnv:     getEnv("APP_ENV", "development"),
-		HTTPAddr:   getEnv("HTTP_ADDR", ":8080"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "zuperduper12"),
-		DBName:     getEnv("DB_NAME", "postgres"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+		AppEnv:     getEnv("APP_ENV"),
+		HTTPAddr:   getEnv("HTTP_ADDR"),
+		DBHost:     getEnv("DB_HOST"),
+		DBPort:     getEnv("DB_PORT"),
+		DBUser:     getEnv("DB_USER"),
+		DBPassword: getEnv("DB_PASSWORD"),
+		DBName:     getEnv("DB_NAME"),
+		DBSSLMode:  getEnv("DB_SSLMODE"),
 	}
 }
 
@@ -41,9 +41,10 @@ func (c *Config) DatabaseURL() string {
 	)
 }
 
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+func getEnv(key string) string {
+	value, ok := os.LookupEnv(key)
+	if !ok || value == "" {
+		panic(fmt.Sprintf("environment variable %s not set", key))
 	}
-	return fallback
+	return value
 }

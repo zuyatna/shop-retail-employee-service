@@ -20,7 +20,9 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	if err := godotenv.Load("../../.env"); err != nil {
+		log.Println("No .env file found, fallback to system env")
+	}
 
 	ctx := context.Background()
 	cfg := config.Load()
