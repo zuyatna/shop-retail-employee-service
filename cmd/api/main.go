@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +15,7 @@ import (
 	"github.com/zuyatna/shop-retail-employee-service/internal/adapter/repo"
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
+	"github.com/zuyatna/shop-retail-employee-service/internal/utils/idgen"
 )
 
 func main() {
@@ -40,14 +39,9 @@ func main() {
 	}
 
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
-	svc := usecase.NewEmployeeUsecase(pgRepo)
-	handler := httpAdapter.NewEmployeeHandler(svc, func() string {
-		b := make([]byte, 16)
-		if _, err := rand.Read(b); err != nil {
-			return ""
-		}
-		return hex.EncodeToString(b)
-	})
+	uuidGen := idgen.NewUUIDv7Generator()
+	svc := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
+	handler := httpAdapter.NewEmployeeHandler(svc)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /employees", handler.List)

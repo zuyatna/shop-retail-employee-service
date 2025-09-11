@@ -47,9 +47,3 @@ var (
 	ErrDuplicate  = fmt.Errorf("employee already exists")
 	ErrBadRequest = fmt.Errorf("bad request")
 )
-
-type errStr string
-
-func (e errStr) Error() string {
-	return string(e)
-}

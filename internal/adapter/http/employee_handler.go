@@ -12,14 +12,12 @@ import (
 )
 
 type EmployeeHandler struct {
-	svc   *usecase.EmployeeUsecase
-	idGen func() string
+	svc *usecase.EmployeeUsecase
 }
 
-func NewEmployeeHandler(svc *usecase.EmployeeUsecase, idGen func() string) *EmployeeHandler {
+func NewEmployeeHandler(svc *usecase.EmployeeUsecase) *EmployeeHandler {
 	return &EmployeeHandler{
-		svc:   svc,
-		idGen: idGen,
+		svc: svc,
 	}
 }
 
@@ -70,7 +68,6 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	employee := &domain.Employee{
-		ID:           h.idGen(),
 		Name:         req.Name,
 		Email:        req.Email,
 		PasswordHash: req.Password,

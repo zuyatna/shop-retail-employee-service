@@ -7,15 +7,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type EmployeeUsecase struct {
-	repo domain.EmployeeRepository
+type IDGenerator interface {
+	NewID() (string, error)
 }
 
-func NewEmployeeUsecase(repo domain.EmployeeRepository) *EmployeeUsecase {
-	return &EmployeeUsecase{repo: repo}
+type EmployeeUsecase struct {
+	repo  domain.EmployeeRepository
+	idGen IDGenerator
+}
+
+func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *EmployeeUsecase {
+	return &EmployeeUsecase{repo: repo, idGen: idGen}
 }
 
 func (u *EmployeeUsecase) Create(employee *domain.Employee) error {
+	if employee.ID == "" {
+		id, err := u.idGen.NewID()
+		if err != nil {
+			return err
+		}
+		employee.ID = id
+	}
+
 	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" {
 		return domain.ErrBadRequest
 	}
