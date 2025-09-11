@@ -27,7 +27,7 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `INSERT INTO shop_retail_employees (id, name, email, password_hash, role, position, salary, status, created_at, updated_at)
+	query := `INSERT INTO employees (id, name, email, password_hash, role, position, salary, status, created_at, updated_at)
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 
 	_, err := r.pool.Exec(ctx, query,
@@ -54,8 +54,8 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT *
-			  FROM shop_retail_employees WHERE id = $1`
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at
+			FROM employees WHERE id = $1`
 
 	row := r.pool.QueryRow(ctx, query, id)
 	employee := &domain.Employee{}
@@ -76,8 +76,8 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT *
-			  FROM shop_retail_employees`
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at
+			  FROM employees`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		log.Println("Error finding all employees:", err)
@@ -108,8 +108,8 @@ func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, erro
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT *
-			  FROM shop_retail_employees WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at
+			  FROM employees WHERE email = $1`
 	row := r.pool.QueryRow(ctx, query, email)
 	employee := &domain.Employee{}
 	err := row.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,
@@ -129,7 +129,7 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `UPDATE shop_retail_employees
+	query := `UPDATE employees
 			  SET name = $1, email = $2, password_hash = $3, role = $4, position = $5, salary = $6, status = $7, updated_at = $8
 			  WHERE id = $9`
 	_, err := r.pool.Exec(ctx, query,
@@ -148,7 +148,7 @@ func (r *PostgresEmployeeRepo) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `DELETE FROM shop_retail_employees WHERE id = $1`
+	query := `DELETE FROM employees WHERE id = $1`
 	_, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
 		log.Println("Error deleting employee:", err)

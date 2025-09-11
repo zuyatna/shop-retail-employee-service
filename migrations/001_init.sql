@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS shop_retail_employees (
+CREATE TABLE IF NOT EXISTS employees (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS shop_retail_employees (
 );
 
 -- Index tambahan untuk pencarian cepat
-CREATE INDEX IF NOT EXISTS idx_employees_email ON shop_retail_employees(email);
-CREATE INDEX IF NOT EXISTS idx_employees_role ON shop_retail_employees(role);
+CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
+CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role);

@@ -40,8 +40,8 @@ func main() {
 	}
 
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
-	svg := usecase.NewEmployeeUsecase(pgRepo)
-	handler := httpAdapter.NewEmployeeHandler(svg, func() string {
+	svc := usecase.NewEmployeeUsecase(pgRepo)
+	handler := httpAdapter.NewEmployeeHandler(svc, func() string {
 		b := make([]byte, 16)
 		if _, err := rand.Read(b); err != nil {
 			return ""
