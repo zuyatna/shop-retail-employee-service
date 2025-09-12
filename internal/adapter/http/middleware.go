@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	jwtutils "github.com/zuyatna/shop-retail-employee-service/internal/utils/jwt"
 )
 
@@ -31,11 +32,11 @@ func NewAuthMiddleware(parser interface {
 func (a *AuthMiddleware) WithAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
+		if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing or invalid authorization header"})
 			return
 		}
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		tokenStr := strings.TrimSpace(authHeader[len("Bearer "):])
 		claims, err := a.parser.Parse(tokenStr)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
@@ -48,9 +49,14 @@ func (a *AuthMiddleware) WithAuth(next http.Handler) http.Handler {
 	})
 }
 
-func getCallerRoleFromContext(r *http.Request) string {
-	if role, ok := r.Context().Value(ctxRole).(string); ok {
-		return role
+func getCallerRoleFromContext(r *http.Request) domain.Role {
+	if v := r.Context().Value(ctxRole); v != nil {
+		if roleStr, ok := v.(string); ok {
+			return domain.Role(roleStr)
+		}
+		if role, ok := v.(domain.Role); ok {
+			return role
+		}
 	}
-	return ""
+	return domain.RoleStaff
 }

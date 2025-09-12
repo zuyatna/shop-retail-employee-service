@@ -16,6 +16,7 @@ import (
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 	"github.com/zuyatna/shop-retail-employee-service/internal/utils/idgen"
+	jwtutils "github.com/zuyatna/shop-retail-employee-service/internal/utils/jwt"
 )
 
 func main() {
@@ -38,15 +39,31 @@ func main() {
 		log.Fatalf("Database ping failed: %v\n", err)
 	}
 
+	// repo & usecase
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
 	uuidGen := idgen.NewUUIDv7Generator()
-	svc := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
-	handler := httpAdapter.NewEmployeeHandler(svc)
+	empSvc := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
+	signer := &jwtutils.Signer{Secret: []byte(cfg.JWTSecret), Issuer: cfg.JWTIssuer, TTL: time.Duration(cfg.JWTTTL) * time.Second}
+	authSvc := usecase.NewAuthUsecase(pgRepo, signer)
+
+	// handler
+	empHandler := httpAdapter.NewEmployeeHandler(empSvc)
+	authHandler := httpAdapter.NewAuthHandler(authSvc)
+
+	// middleware
+	authMiddleware := httpAdapter.NewAuthMiddleware(signer)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /employees", handler.List)
-	mux.HandleFunc("GET /employees/", handler.Get)
-	mux.HandleFunc("POST /employees", handler.Create)
+
+	// public routes
+	mux.HandleFunc("POST /login", authHandler.Login)
+	mux.HandleFunc("POST /employee", empHandler.Create)
+
+	// protected routes
+	mux.Handle("GET /employees", authMiddleware.WithAuth(http.HandlerFunc(empHandler.List)))
+	mux.Handle("GET /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Get)))
+	mux.Handle("PUT /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Update)))
+	mux.Handle("DELETE /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Delete)))
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,

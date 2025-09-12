@@ -44,6 +44,7 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 		ID:    employee.ID,
 		Name:  employee.Name,
 		Email: employee.Email,
+		Role:  employee.Role,
 	}
 
 	log.Println("Employee created: ", res)

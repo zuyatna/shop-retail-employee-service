@@ -59,7 +59,10 @@ func (u *EmployeeUsecase) Create(employee *domain.Employee) error {
 	return u.repo.Create(employee)
 }
 
-func (u *EmployeeUsecase) FindAll() ([]*domain.Employee, error) {
+func (u *EmployeeUsecase) FindAll(callerRole domain.Role) ([]*domain.Employee, error) {
+	if !canManageAll(callerRole) {
+		return nil, domain.ErrForbidden
+	}
 	return u.repo.FindAll()
 }
 
@@ -78,9 +81,21 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 	return u.repo.Update(employee)
 }
 
-func (u *EmployeeUsecase) Delete(id string) error {
+func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
 	if id == "" {
 		return domain.ErrBadRequest
 	}
+	if !canManageAll(callerRole) {
+		return domain.ErrForbidden
+	}
 	return u.repo.Delete(id)
+}
+
+func canManageAll(role domain.Role) bool {
+	switch role {
+	case domain.RoleSupervisor, domain.RoleHR, domain.RoleManager:
+		return true
+	default:
+		return false
+	}
 }
