@@ -48,4 +48,5 @@ var (
 	ErrDuplicate  = fmt.Errorf("employee already exists")
 	ErrBadRequest = fmt.Errorf("bad request")
 	ErrDeleted    = fmt.Errorf("employee has been deleted")
+	ErrForbidden  = fmt.Errorf("action forbidden")
 )
