@@ -40,11 +40,14 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employees/")
 	item, err := h.svc.FindByID(id)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrNotFound) {
-			status = http.StatusNotFound
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "employee not found"})
+		case errors.Is(err, domain.ErrDeleted):
+			writeJSON(w, http.StatusGone, map[string]string{"error": "employee has been deleted"})
+		default:
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
