@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS employees (
     salary NUMERIC(15,2) NOT NULL DEFAULT 0,
     status TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
+    updated_at TIMESTAMPTZ NOT NULL,
+    deleted_at TIMESTAMPTZ NULL
 );
 
 -- Index tambahan untuk pencarian cepat
 CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
 CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role);
+CREATE INDEX IF NOT EXISTS idx_employees_deleted_at ON employees(deleted_at);

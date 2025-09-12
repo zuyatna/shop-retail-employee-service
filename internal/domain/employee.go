@@ -15,16 +15,17 @@ const (
 )
 
 type Employee struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
-	Role         Role      `json:"role"`
-	Position     string    `json:"position"`
-	Salary       float64   `json:"salary"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	Email        string     `json:"email"`
+	PasswordHash string     `json:"-"`
+	Role         Role       `json:"role"`
+	Position     string     `json:"position"`
+	Salary       float64    `json:"salary"`
+	Status       string     `json:"status"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 type EmployeeResponse struct {
@@ -46,4 +47,5 @@ var (
 	ErrNotFound   = fmt.Errorf("employee not found")
 	ErrDuplicate  = fmt.Errorf("employee already exists")
 	ErrBadRequest = fmt.Errorf("bad request")
+	ErrDeleted    = fmt.Errorf("employee has been deleted")
 )
