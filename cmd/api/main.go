@@ -42,13 +42,13 @@ func main() {
 	// repo & usecase
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
 	uuidGen := idgen.NewUUIDv7Generator()
-	empSvc := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
+	empUsecase := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
 	signer := &jwtutils.Signer{Secret: []byte(cfg.JWTSecret), Issuer: cfg.JWTIssuer, TTL: time.Duration(cfg.JWTTTL) * time.Second}
-	authSvc := usecase.NewAuthUsecase(pgRepo, signer)
+	authUsecase := usecase.NewAuthUsecase(pgRepo, signer)
 
 	// handler
-	empHandler := httpAdapter.NewEmployeeHandler(empSvc)
-	authHandler := httpAdapter.NewAuthHandler(authSvc)
+	empHandler := httpAdapter.NewEmployeeHandler(empUsecase)
+	authHandler := httpAdapter.NewAuthHandler(authUsecase)
 
 	// middleware
 	authMiddleware := httpAdapter.NewAuthMiddleware(signer)

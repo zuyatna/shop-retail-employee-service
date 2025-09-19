@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -13,12 +12,12 @@ import (
 )
 
 type EmployeeHandler struct {
-	svc *usecase.EmployeeUsecase
+	empUsecase *usecase.EmployeeUsecase
 }
 
-func NewEmployeeHandler(svc *usecase.EmployeeUsecase) *EmployeeHandler {
+func NewEmployeeHandler(empUsecase *usecase.EmployeeUsecase) *EmployeeHandler {
 	return &EmployeeHandler{
-		svc: svc,
+		empUsecase: empUsecase,
 	}
 }
 
@@ -30,7 +29,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
-	items, err := h.svc.FindAll(caller)
+	items, err := h.empUsecase.FindAll(caller)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrForbidden) {
@@ -44,7 +43,7 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
-	item, err := h.svc.FindByID(id)
+	item, err := h.empUsecase.FindByID(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
@@ -86,7 +85,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Status:       req.Status,
 	}
 
-	if err := h.svc.Create(employee); err != nil {
+	if err := h.empUsecase.Create(employee); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
 			status = http.StatusBadRequest
@@ -129,13 +128,13 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Status:   req.Status,
 	}
 	if req.Password != nil {
-		passowrd := strings.TrimSpace(*req.Password)
-		if passowrd != "" {
-			employee.PasswordHash = passowrd
+		password := strings.TrimSpace(*req.Password)
+		if password != "" {
+			employee.PasswordHash = password
 		}
 	}
 
-	if err := h.svc.Update(employee); err != nil {
+	if err := h.empUsecase.Update(employee); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
 			status = http.StatusBadRequest
@@ -147,13 +146,14 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
+	log.Printf("Employee with ID %s updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee updated"})
 }
 
 func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 	caller := getCallerRoleFromContext(r)
-	if err := h.svc.Delete(caller, id); err != nil {
+	if err := h.empUsecase.Delete(caller, id); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
 			status = http.StatusBadRequest
@@ -167,7 +167,6 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "employee deleted"})
+	log.Printf("Employee with ID %s deleted\n", id)
+	w.WriteHeader(http.StatusNoContent)
 }
-
-func coba() { fmt.Printf("coba") }
