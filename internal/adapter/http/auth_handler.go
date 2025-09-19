@@ -38,7 +38,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrBadRequest):
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "email and password are required"})
-		case errors.Is(err, domain.ErrNotFound), errors.Is(err, errors.New("invalid credentials")):
+		case errors.Is(err, domain.ErrNotFound), errors.Is(err, usecase.ErrInvalidCredentials):
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid email or password"})
 		default:
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})

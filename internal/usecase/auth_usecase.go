@@ -7,6 +7,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
 type TokenSigner interface {
 	Generate(userID, email, role string) (string, error)
 }
@@ -31,7 +33,7 @@ func (u *AuthUsecase) Login(email, password string) (string, *domain.Employee, e
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(employee.PasswordHash), []byte(password)); err != nil {
-		return "", nil, errors.New("invalid credentials")
+		return "", nil, ErrInvalidCredentials
 	}
 
 	token, err := u.signer.Generate(employee.ID, employee.Email, string(employee.Role))
