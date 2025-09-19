@@ -78,6 +78,19 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 	if employee.ID == "" {
 		return domain.ErrBadRequest
 	}
+	current, err := u.repo.FindByID(employee.ID)
+	if err != nil {
+		return err
+	}
+	if employee.PasswordHash == "" {
+		employee.PasswordHash = current.PasswordHash
+	} else {
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(employee.PasswordHash), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		employee.PasswordHash = string(passwordHash)
+	}
 	return u.repo.Update(employee)
 }
 

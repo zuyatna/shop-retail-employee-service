@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -102,7 +103,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 type updateEmployeeRequest struct {
 	Name     string  `json:"name"`
 	Email    string  `json:"email"`
-	Password string  `json:"password"`
+	Password *string `json:"password"`
 	Role     string  `json:"role"`
 	Position string  `json:"position"`
 	Salary   float64 `json:"salary"`
@@ -119,14 +120,19 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	employee := &domain.Employee{
-		ID:           id,
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: req.Password,
-		Role:         domain.Role(req.Role),
-		Position:     req.Position,
-		Salary:       req.Salary,
-		Status:       req.Status,
+		ID:       id,
+		Name:     req.Name,
+		Email:    req.Email,
+		Role:     domain.Role(req.Role),
+		Position: req.Position,
+		Salary:   req.Salary,
+		Status:   req.Status,
+	}
+	if req.Password != nil {
+		passowrd := strings.TrimSpace(*req.Password)
+		if passowrd != "" {
+			employee.PasswordHash = passowrd
+		}
 	}
 
 	if err := h.svc.Update(employee); err != nil {
@@ -163,3 +169,5 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee deleted"})
 }
+
+func coba() { fmt.Printf("coba") }
