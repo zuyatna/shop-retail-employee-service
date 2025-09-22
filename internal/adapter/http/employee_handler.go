@@ -44,7 +44,7 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 	callerRole := getCallerRoleFromContext(r)
-	callerID := getCalledIDFromContext(r)
+	callerID := getCallerIDFromContext(r)
 
 	item, err := h.empUsecase.FindByID(callerRole, callerID, id)
 	if err != nil {

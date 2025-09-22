@@ -144,7 +144,7 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 
 	query := `UPDATE employees
 			  SET name = $1, email = $2, password_hash = $3, role = $4, position = $5, salary = $6, status = $7, updated_at = $8, address = $9, district = $10, city = $11, province = $12, phone = $13
-			  WHERE id = $9 AND deleted_at IS NULL`
+			  WHERE id = $14 AND deleted_at IS NULL`
 	cmd, err := r.pool.Exec(ctx, query,
 		employee.Name, employee.Email, employee.PasswordHash, employee.Role,
 		employee.Position, employee.Salary, employee.Status, time.Now(),
