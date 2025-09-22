@@ -49,6 +49,8 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	item, err := h.empUsecase.FindByID(callerRole, callerID, id)
 	if err != nil {
 		switch {
+		case errors.Is(err, domain.ErrForbidden):
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
 		case errors.Is(err, domain.ErrNotFound):
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "employee not found"})
 		case errors.Is(err, domain.ErrDeleted):
@@ -69,6 +71,11 @@ type createEmployeeRequest struct {
 	Position string  `json:"position"`
 	Salary   float64 `json:"salary"`
 	Status   string  `json:"status"`
+	Address  string  `json:"address"`
+	District string  `json:"district"`
+	City     string  `json:"city"`
+	Province string  `json:"province"`
+	Phone    string  `json:"phone"`
 }
 
 func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -87,13 +94,21 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Position:     req.Position,
 		Salary:       req.Salary,
 		Status:       req.Status,
+		Address:      req.Address,
+		District:     req.District,
+		City:         req.City,
+		Province:     req.Province,
+		Phone:        req.Phone,
 	}
 
 	if err := h.empUsecase.Create(caller, employee); err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrBadRequest) {
+		switch {
+		case errors.Is(err, domain.ErrForbidden):
+			status = http.StatusForbidden
+		case errors.Is(err, domain.ErrBadRequest):
 			status = http.StatusBadRequest
-		} else if errors.Is(err, domain.ErrDuplicate) {
+		case errors.Is(err, domain.ErrDuplicate):
 			status = http.StatusConflict
 		}
 		writeJSON(w, status, map[string]string{"error": err.Error()})
@@ -111,6 +126,11 @@ type updateEmployeeRequest struct {
 	Position string  `json:"position"`
 	Salary   float64 `json:"salary"`
 	Status   string  `json:"status"`
+	Address  string  `json:"address"`
+	District string  `json:"district"`
+	City     string  `json:"city"`
+	Province string  `json:"province"`
+	Phone    string  `json:"phone"`
 }
 
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +150,11 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Position: req.Position,
 		Salary:   req.Salary,
 		Status:   req.Status,
+		Address:  req.Address,
+		District: req.District,
+		City:     req.City,
+		Province: req.Province,
+		Phone:    req.Phone,
 	}
 	if req.Password != nil {
 		password := strings.TrimSpace(*req.Password)

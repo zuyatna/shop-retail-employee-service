@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS employees (
     status TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    deleted_at TIMESTAMPTZ NULL
+    deleted_at TIMESTAMPTZ NULL,
+    address TEXT,
+    district TEXT,
+    city TEXT,
+    province TEXT,
+    phone TEXT
 );
 
 -- Index tambahan untuk pencarian cepat

@@ -26,6 +26,11 @@ type Employee struct {
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	Address      string     `json:"address"`
+	District     string     `json:"district"`
+	City         string     `json:"city"`
+	Province     string     `json:"province"`
+	Phone        string     `json:"phone"`
 }
 
 type EmployeeResponse struct {
