@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"golang.org/x/crypto/bcrypt"
@@ -20,17 +22,32 @@ func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *Empl
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
 }
 
-func (u *EmployeeUsecase) Create(employee *domain.Employee) error {
+func canManageAll(role domain.Role) bool {
+	switch role {
+	case domain.RoleSupervisor, domain.RoleHR, domain.RoleManager:
+		return true
+	default:
+		return false
+	}
+}
+
+func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employee) error {
+	if !canManageAll(callerRole) {
+		return domain.ErrForbidden
+	}
+
+	employee.Name = strings.TrimSpace(employee.Name)
+	employee.Email = strings.TrimSpace(strings.ToLower(employee.Email))
+	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" {
+		return domain.ErrBadRequest
+	}
+
 	if employee.ID == "" {
 		id, err := u.idGen.NewID()
 		if err != nil {
 			return err
 		}
 		employee.ID = id
-	}
-
-	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" {
-		return domain.ErrBadRequest
 	}
 
 	_, err := u.repo.FindByEmail(employee.Email)
@@ -41,20 +58,14 @@ func (u *EmployeeUsecase) Create(employee *domain.Employee) error {
 		return err
 	}
 
-	valid := false
-	switch employee.Role {
-	case domain.RoleSupervisor, domain.RoleHR, domain.RoleManager, domain.RoleStaff:
-		valid = true
-	}
-	if !valid {
-		return domain.ErrBadRequest
-	}
-
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(employee.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	employee.PasswordHash = string(passwordHash)
+
+	now := time.Now()
+	employee.CreatedAt, employee.UpdatedAt = now, now
 
 	return u.repo.Create(employee)
 }
@@ -66,7 +77,10 @@ func (u *EmployeeUsecase) FindAll(callerRole domain.Role) ([]*domain.Employee, e
 	return u.repo.FindAll()
 }
 
-func (u *EmployeeUsecase) FindByID(id string) (*domain.Employee, error) {
+func (u *EmployeeUsecase) FindByID(callerRole domain.Role, callerId, id string) (*domain.Employee, error) {
+	if callerRole == domain.RoleStaff && callerId != id {
+		return nil, domain.ErrForbidden
+	}
 	return u.repo.FindByID(id)
 }
 
@@ -95,20 +109,11 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 }
 
 func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
-	if id == "" {
-		return domain.ErrBadRequest
-	}
 	if !canManageAll(callerRole) {
 		return domain.ErrForbidden
 	}
-	return u.repo.Delete(id)
-}
-
-func canManageAll(role domain.Role) bool {
-	switch role {
-	case domain.RoleSupervisor, domain.RoleHR, domain.RoleManager:
-		return true
-	default:
-		return false
+	if strings.TrimSpace(id) == "" {
+		return domain.ErrBadRequest
 	}
+	return u.repo.Delete(id)
 }

@@ -57,9 +57,9 @@ func main() {
 
 	// public routes
 	mux.HandleFunc("POST /login", authHandler.Login)
-	mux.HandleFunc("POST /employee", empHandler.Create)
 
 	// protected routes
+	mux.Handle("POST /employee", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Create)))
 	mux.Handle("GET /employees", authMiddleware.WithAuth(http.HandlerFunc(empHandler.List)))
 	mux.Handle("GET /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Get)))
 	mux.Handle("PUT /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Update)))

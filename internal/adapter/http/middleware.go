@@ -60,3 +60,12 @@ func getCallerRoleFromContext(r *http.Request) domain.Role {
 	}
 	return domain.RoleStaff
 }
+
+func getCalledIDFromContext(r *http.Request) string {
+	if v := r.Context().Value(ctxUserID); v != nil {
+		if id, ok := v.(string); ok {
+			return id
+		}
+	}
+	return ""
+}

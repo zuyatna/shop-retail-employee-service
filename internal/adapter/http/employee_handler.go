@@ -43,7 +43,10 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
-	item, err := h.empUsecase.FindByID(id)
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCalledIDFromContext(r)
+
+	item, err := h.empUsecase.FindByID(callerRole, callerID, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
@@ -69,6 +72,7 @@ type createEmployeeRequest struct {
 }
 
 func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
+	caller := getCallerRoleFromContext(r)
 	var req createEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
@@ -85,7 +89,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Status:       req.Status,
 	}
 
-	if err := h.empUsecase.Create(employee); err != nil {
+	if err := h.empUsecase.Create(caller, employee); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
 			status = http.StatusBadRequest
