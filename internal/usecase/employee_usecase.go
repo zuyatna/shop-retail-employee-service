@@ -22,6 +22,20 @@ func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *Empl
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
 }
 
+func trim(s string) string { return strings.TrimSpace(s) }
+
+func validateRequireContract(employee *domain.Employee) error {
+	employee.Email = trim(strings.ToLower(employee.Email))
+	employee.PasswordHash = trim(employee.PasswordHash)
+	employee.Phone = trim(employee.Phone)
+
+	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" ||
+		employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
+		return domain.ErrBadRequest
+	}
+	return nil
+}
+
 func canManageAll(role domain.Role) bool {
 	switch role {
 	case domain.RoleSupervisor, domain.RoleHR, domain.RoleManager:
@@ -36,10 +50,8 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 		return domain.ErrForbidden
 	}
 
-	employee.Name = strings.TrimSpace(employee.Name)
-	employee.Email = strings.TrimSpace(strings.ToLower(employee.Email))
-	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" {
-		return domain.ErrBadRequest
+	if err := validateRequireContract(employee); err != nil {
+		return err
 	}
 
 	if employee.ID == "" {
@@ -92,19 +104,34 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 	if employee.ID == "" {
 		return domain.ErrBadRequest
 	}
-	current, err := u.repo.FindByID(employee.ID)
-	if err != nil {
+
+	if !canManageAll(employee.Role) {
+		return domain.ErrForbidden
+	}
+
+	// validate required fields
+	if err := validateRequireContract(employee); err != nil {
 		return err
 	}
-	if employee.PasswordHash == "" {
-		employee.PasswordHash = current.PasswordHash
-	} else {
+
+	// if password is not empty, hash it. Otherwise, keep the existing hash.
+	// this allows updating other fields without changing the password.
+	employee.Email = trim(strings.ToLower(employee.Email))
+	if employee.PasswordHash != "" {
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(employee.PasswordHash), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
 		employee.PasswordHash = string(passwordHash)
+	} else {
+		existing, err := u.repo.FindByID(employee.ID)
+		if err != nil {
+			return err
+		}
+		employee.PasswordHash = existing.PasswordHash
 	}
+	employee.UpdatedAt = time.Now()
+
 	return u.repo.Update(employee)
 }
 
@@ -112,6 +139,7 @@ func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
 	if !canManageAll(callerRole) {
 		return domain.ErrForbidden
 	}
+
 	if strings.TrimSpace(id) == "" {
 		return domain.ErrBadRequest
 	}
