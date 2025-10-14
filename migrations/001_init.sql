@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS employees (
     district TEXT,
     city TEXT,
     province TEXT,
-    phone TEXT
+    phone TEXT,
+    photo BYTEA
 );
 
 -- Index tambahan untuk pencarian cepat

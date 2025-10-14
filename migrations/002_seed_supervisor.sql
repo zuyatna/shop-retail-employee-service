@@ -14,7 +14,8 @@ INSERT INTO employees (
     district,
     city,
     province,
-    phone
+    phone,
+    photo
 ) VALUES (
     '00000000-0000-0000-0000-000000000001',
     'Initial Supervisor',
@@ -26,6 +27,7 @@ INSERT INTO employees (
     'active',
     NOW(),
     NOW(),
+    NULL,
     NULL,
     NULL,
     NULL,

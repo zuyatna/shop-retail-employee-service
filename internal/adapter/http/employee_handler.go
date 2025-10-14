@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
@@ -19,6 +20,24 @@ func NewEmployeeHandler(empUsecase *usecase.EmployeeUsecase) *EmployeeHandler {
 	return &EmployeeHandler{
 		empUsecase: empUsecase,
 	}
+}
+
+func decoderPhotoString(s string) ([]byte, error) {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return nil, nil
+	}
+	if idx := strings.Index(trimmed, ","); idx != -1 {
+		prefix := trimmed[:idx]
+		if strings.Contains(strings.ToLower(prefix), "base64") {
+			trimmed = trimmed[idx+1:]
+		}
+	}
+	data, err := base64.StdEncoding.DecodeString(trimmed)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -76,6 +95,7 @@ type createEmployeeRequest struct {
 	City     string  `json:"city"`
 	Province string  `json:"province"`
 	Phone    string  `json:"phone"`
+	Photo    string  `json:"photo"` // base64 encoded string
 }
 
 func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -86,19 +106,27 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	photo, err := decoderPhotoString(req.Photo)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid photo encoding"})
+		return
+	}
+
 	employee := &domain.Employee{
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: req.Password,
-		Role:         domain.Role(req.Role),
-		Position:     req.Position,
-		Salary:       req.Salary,
-		Status:       req.Status,
-		Address:      req.Address,
-		District:     req.District,
-		City:         req.City,
-		Province:     req.Province,
-		Phone:        req.Phone,
+		Name:          req.Name,
+		Email:         req.Email,
+		PasswordHash:  req.Password,
+		Role:          domain.Role(req.Role),
+		Position:      req.Position,
+		Salary:        req.Salary,
+		Status:        req.Status,
+		Address:       req.Address,
+		District:      req.District,
+		City:          req.City,
+		Province:      req.Province,
+		Phone:         req.Phone,
+		Photo:         photo,
+		PhotoProvided: photo != nil,
 	}
 
 	if err := h.empUsecase.Create(caller, employee); err != nil {
@@ -110,6 +138,8 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusBadRequest
 		case errors.Is(err, domain.ErrDuplicate):
 			status = http.StatusConflict
+		case errors.Is(err, domain.ErrPhotoTooLarge):
+			status = http.StatusBadRequest
 		}
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
@@ -131,6 +161,7 @@ type updateEmployeeRequest struct {
 	City     string  `json:"city"`
 	Province string  `json:"province"`
 	Phone    string  `json:"phone"`
+	Photo    *string `json:"photo"` // base64 encoded string
 }
 
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -163,6 +194,20 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if req.Photo != nil {
+		photo, err := decoderPhotoString(*req.Photo)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid photo encoding"})
+			return
+		}
+		if len(photo) == 0 {
+			employee.Photo = nil
+		} else {
+			employee.Photo = photo
+		}
+		employee.PhotoProvided = true
+	}
+
 	if err := h.empUsecase.Update(employee); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
@@ -171,6 +216,8 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusNotFound
 		} else if errors.Is(err, domain.ErrDeleted) {
 			status = http.StatusGone
+		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
+			status = http.StatusBadRequest
 		}
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return

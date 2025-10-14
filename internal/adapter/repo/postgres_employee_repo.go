@@ -27,14 +27,14 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `INSERT INTO employees (id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone)
-			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, $11, $12, $13, $14, $15)`
+	query := `INSERT INTO employees (id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo)
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, $11, $12, $13, $14, $15, $16)`
 
 	_, err := r.pool.Exec(ctx, query,
 		employee.ID, employee.Name, employee.Email, employee.PasswordHash,
 		employee.Role, employee.Position, employee.Salary, employee.Status,
 		time.Now(), time.Now(), employee.Address, employee.District, employee.City,
-		employee.Province, employee.Phone,
+		employee.Province, employee.Phone, employee.Photo,
 	)
 	if err != nil {
 		log.Println("Error inserting employee:", err)
@@ -56,7 +56,7 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo
 			FROM employees WHERE id = $1`
 
 	row := r.pool.QueryRow(ctx, query, id)
@@ -64,7 +64,7 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 	err := row.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,
 		&employee.Role, &employee.Position, &employee.Salary, &employee.Status,
 		&employee.CreatedAt, &employee.UpdatedAt, &employee.DeletedAt, &employee.Address,
-		&employee.District, &employee.City, &employee.Province, &employee.Phone)
+		&employee.District, &employee.City, &employee.Province, &employee.Phone, &employee.Photo)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrNotFound
@@ -82,7 +82,7 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo
 			  FROM employees
 			  WHERE deleted_at IS NULL
 			  ORDER BY created_at DESC`
@@ -99,7 +99,7 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 		err := rows.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,
 			&employee.Role, &employee.Position, &employee.Salary, &employee.Status,
 			&employee.CreatedAt, &employee.UpdatedAt, &employee.DeletedAt, &employee.Address,
-			&employee.District, &employee.City, &employee.Province, &employee.Phone)
+			&employee.District, &employee.City, &employee.Province, &employee.Phone, &employee.Photo)
 		if err != nil {
 			log.Println("Error scanning employee:", err)
 			return nil, err
@@ -117,14 +117,14 @@ func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, erro
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo
 			  FROM employees WHERE email = $1`
 	row := r.pool.QueryRow(ctx, query, email)
 	employee := &domain.Employee{}
 	err := row.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,
 		&employee.Role, &employee.Position, &employee.Salary, &employee.Status,
 		&employee.CreatedAt, &employee.UpdatedAt, &employee.DeletedAt, &employee.Address,
-		&employee.District, &employee.City, &employee.Province, &employee.Phone)
+		&employee.District, &employee.City, &employee.Province, &employee.Phone, &employee.Photo)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrNotFound
@@ -143,13 +143,13 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 	defer cancel()
 
 	query := `UPDATE employees
-			  SET name = $1, email = $2, password_hash = $3, role = $4, position = $5, salary = $6, status = $7, updated_at = $8, address = $9, district = $10, city = $11, province = $12, phone = $13
-			  WHERE id = $14 AND deleted_at IS NULL`
+			  SET name = $1, email = $2, password_hash = $3, role = $4, position = $5, salary = $6, status = $7, updated_at = $8, address = $9, district = $10, city = $11, province = $12, phone = $13, photo = $14
+			  WHERE id = $15 AND deleted_at IS NULL`
 	cmd, err := r.pool.Exec(ctx, query,
 		employee.Name, employee.Email, employee.PasswordHash, employee.Role,
 		employee.Position, employee.Salary, employee.Status, time.Now(),
 		employee.Address, employee.District, employee.City, employee.Province,
-		employee.Phone, employee.ID,
+		employee.Phone, employee.Photo, employee.ID,
 	)
 	if err != nil {
 		log.Println("Error updating employee:", err)

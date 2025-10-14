@@ -18,6 +18,8 @@ type EmployeeUsecase struct {
 	idGen IDGenerator
 }
 
+const maxPhotoSize = 20 * 1024 * 1024 // 20MB
+
 func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *EmployeeUsecase {
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
 }
@@ -52,6 +54,10 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 
 	if err := validateRequireContract(employee); err != nil {
 		return err
+	}
+
+	if employee.PhotoProvided && employee.Photo != nil && len(employee.Photo) > maxPhotoSize {
+		return domain.ErrPhotoTooLarge
 	}
 
 	if employee.ID == "" {
@@ -114,6 +120,29 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 		return err
 	}
 
+	var existing *domain.Employee
+	var err error
+	if !employee.PhotoProvided || employee.Photo == "" {
+		existing, err = u.repo.FindByID(employee.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !employee.PhotoProvided {
+		if existing == nil {
+			existing, err = u.repo.FindByID(employee.ID)
+			if err != nil {
+				return err
+			}
+		}
+		employee.Photo = existing.Photo
+	}
+
+	if employee.PhotoProvided && employee.Photo != nil && len(employee.Photo) > maxPhotoSize {
+		return domain.ErrPhotoTooLarge
+	}
+
 	// if password is not empty, hash it. Otherwise, keep the existing hash.
 	// this allows updating other fields without changing the password.
 	employee.Email = trim(strings.ToLower(employee.Email))
@@ -124,9 +153,11 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 		}
 		employee.PasswordHash = string(passwordHash)
 	} else {
-		existing, err := u.repo.FindByID(employee.ID)
-		if err != nil {
-			return err
+		if existing == nil {
+			existing, err = u.repo.FindByID(employee.ID)
+			if err != nil {
+				return err
+			}
 		}
 		employee.PasswordHash = existing.PasswordHash
 	}
