@@ -1,0 +1,36 @@
+INSERT INTO employees (
+    id,
+    name,
+    email,
+    password_hash,
+    role,
+    position,
+    salary,
+    status,
+    created_at,
+    updated_at,
+    deleted_at,
+    address,
+    district,
+    city,
+    province,
+    phone
+) VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Initial Supervisor',
+    'supervisor@shop.local',
+    '$2a$10$/kplRAY3kluIEE0kYQRExuvE0JkZFyWebVc2KDSpx.1Hx7VJp8d6S',
+    'supervisor',
+    'Supervisor',
+    0,
+    'active',
+    NOW(),
+    NOW(),
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+)
+ON CONFLICT (email) DO NOTHING;

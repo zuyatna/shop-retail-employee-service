@@ -24,6 +24,9 @@ Then
 ### Migration
 Copy file migration into container
 > sudo docker cp migrations/001_init.sql employee_db:/001_init.sql
+> sudo docker cp migrations/002_seed_supervisor.sql employee_db:/002_seed_supervisor.sql
+
+Note: You should update the supervisor account password after migration!
 
 Insert file into database
 > sudo docker exec -it shop-retail psql -U your_user -d employee_db -f /001_init.sql
