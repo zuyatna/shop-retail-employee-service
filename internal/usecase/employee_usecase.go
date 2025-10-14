@@ -18,7 +18,7 @@ type EmployeeUsecase struct {
 	idGen IDGenerator
 }
 
-const maxPhotoSize = 20 * 1024 * 1024 // 20MB
+const maxPhotoSize = 5 * 1024 * 1024 // 5MB
 
 func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *EmployeeUsecase {
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
@@ -122,7 +122,7 @@ func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
 
 	var existing *domain.Employee
 	var err error
-	if !employee.PhotoProvided || employee.Photo == "" {
+	if !employee.PhotoProvided || len(employee.Photo) == 0 {
 		existing, err = u.repo.FindByID(employee.ID)
 		if err != nil {
 			return err
