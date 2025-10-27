@@ -167,6 +167,9 @@ type updateEmployeeRequest struct {
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
 	var req updateEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
@@ -208,7 +211,7 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		employee.PhotoProvided = true
 	}
 
-	if err := h.empUsecase.Update(employee); err != nil {
+	if err := h.empUsecase.Update(callerRole, callerID, employee); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrBadRequest) {
 			status = http.StatusBadRequest

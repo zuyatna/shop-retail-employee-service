@@ -33,8 +33,8 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 	_, err := r.pool.Exec(ctx, query,
 		employee.ID, employee.Name, employee.Email, employee.PasswordHash,
 		employee.Role, employee.Position, employee.Salary, employee.Status,
-		time.Now(), time.Now(), employee.Address, employee.District, employee.City,
-		employee.Province, employee.Phone, employee.Photo,
+		employee.CreatedAt, employee.UpdatedAt, employee.Address, employee.District,
+		employee.City, employee.Province, employee.Phone, employee.Photo,
 	)
 	if err != nil {
 		log.Println("Error inserting employee:", err)
@@ -82,7 +82,7 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
+	query := `SELECT id, name, email, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
 			  FROM employees
 			  WHERE deleted_at IS NULL
 			  ORDER BY created_at DESC`
@@ -96,10 +96,10 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	var employees []*domain.Employee
 	for rows.Next() {
 		employee := &domain.Employee{}
-		err := rows.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,
-			&employee.Role, &employee.Position, &employee.Salary, &employee.Status,
-			&employee.CreatedAt, &employee.UpdatedAt, &employee.DeletedAt, &employee.Address,
-			&employee.District, &employee.City, &employee.Province, &employee.Phone)
+		err := rows.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.Role,
+			&employee.Position, &employee.Salary, &employee.Status, &employee.CreatedAt,
+			&employee.UpdatedAt, &employee.DeletedAt, &employee.Address, &employee.District,
+			&employee.City, &employee.Province, &employee.Phone)
 		if err != nil {
 			log.Println("Error scanning employee:", err)
 			return nil, err

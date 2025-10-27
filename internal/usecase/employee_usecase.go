@@ -31,8 +31,7 @@ func validateRequireContract(employee *domain.Employee) error {
 	employee.PasswordHash = trim(employee.PasswordHash)
 	employee.Phone = trim(employee.Phone)
 
-	if employee.Name == "" || employee.Email == "" || employee.PasswordHash == "" ||
-		employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
+	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
 		return domain.ErrBadRequest
 	}
 	return nil
@@ -106,13 +105,17 @@ func (u *EmployeeUsecase) FindByEmail(email string) (*domain.Employee, error) {
 	return u.repo.FindByEmail(email)
 }
 
-func (u *EmployeeUsecase) Update(employee *domain.Employee) error {
+func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employee *domain.Employee) error {
 	if employee.ID == "" {
 		return domain.ErrBadRequest
 	}
 
-	if !canManageAll(employee.Role) {
-		return domain.ErrForbidden
+	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
+		if callerRole == domain.RoleStaff && callerID == employee.ID {
+			// Allow staff to update their own employee record
+		} else {
+			return domain.ErrForbidden
+		}
 	}
 
 	// validate required fields
