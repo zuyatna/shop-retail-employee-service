@@ -32,6 +32,7 @@ type Employee struct {
 	Province      string     `json:"province"`
 	Phone         string     `json:"phone"`
 	Photo         []byte     `json:"photo,omitempty"`
+	PhotoMIME     string     `json:"-"`
 	PhotoProvided bool       `json:"-"`
 }
 

@@ -15,18 +15,18 @@ docker run --name shop-retail \
 ### Check Running Docker Container
 > sudo docker ps -a
 
-### Create Table
+### Enter The Container
 > sudo docker exec -it shop-retail psql -U your_user
-
-Then
-> CREATE TABLE employee;
 
 ### Migration
 Copy file migration into container
-> sudo docker cp migrations/001_init.sql employee_db:/001_init.sql
-> sudo docker cp migrations/002_seed_supervisor.sql employee_db:/002_seed_supervisor.sql
+> sudo docker cp migrations/001_init.sql shop-retail:/001_init.sql
+
+> sudo docker cp migrations/002_seed_supervisor.sql shop-retail:/002_seed_supervisor.sql
 
 Note: You should update the supervisor account password after migration!
 
 Insert file into database
 > sudo docker exec -it shop-retail psql -U your_user -d employee_db -f /001_init.sql
+
+> sudo docker exec -it shop-retail psql -U your_user -d employee_db -f /002_seed_supervisor.sql
