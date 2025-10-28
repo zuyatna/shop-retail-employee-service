@@ -1,11 +1,14 @@
 package http
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
@@ -80,6 +83,53 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
+}
+
+func (h *EmployeeHandler) GetPhoto(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/employee/")
+	id = strings.TrimSuffix(id, "/photo")
+
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
+	employee, err := h.empUsecase.FindByID(callerRole, callerID, id)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrForbidden):
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
+		case errors.Is(err, domain.ErrNotFound):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "employee not found"})
+		case errors.Is(err, domain.ErrDeleted):
+			writeJSON(w, http.StatusGone, map[string]string{"error": "employee has been deleted"})
+		default:
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+		return
+	}
+
+	if len(employee.Photo) == 0 {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "photo not found"})
+		return
+	}
+
+	sum := sha256.Sum256(employee.Photo)
+	etag := `W/"` + hex.EncodeToString(sum[:]) + `"`
+	if match := r.Header.Get("If-None-Match"); match != "" && match == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	mime := employee.PhotoMIME
+	if mime == "" {
+		mime = "application/octet-stream" // default MIME type
+	}
+
+	w.Header().Set("Content-Type", mime)
+	w.Header().Set("Content-Length", strconv.Itoa(len(employee.Photo)))
+	w.Header().Set("Cache-Control", "private, max-age=86400") // cache for 1 day
+	w.Header().Set("ETag", etag)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(employee.Photo)
 }
 
 type createEmployeeRequest struct {
@@ -248,4 +298,49 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Employee with ID %s deleted\n", id)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func decodeAndDetectMIME(s string) ([]byte, string, error) {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return nil, "", errors.New("empty photo")
+	}
+
+	var hintedMIME string
+	if idx := strings.Index(trimmed, ","); idx != -1 && strings.Contains(strings.ToLower(trimmed[:idx]), "base64") {
+		header := trimmed[:idx]
+		trimmed = trimmed[idx+1:]
+		if p := strings.Index(header, ":"); p != -1 {
+			if q := strings.Index(header[p+1:], ";"); q != -1 {
+				hintedMIME = header[p+1 : p+1+q]
+			}
+		}
+	}
+
+	data, err := base64.StdEncoding.DecodeString(trimmed)
+	if err != nil || len(data) == 0 {
+		return nil, "", errors.New("invalid base64 encoding")
+	}
+
+	sniff := http.DetectContentType(data[:min(512, len(data))])
+	mime := strings.ToLower(strings.TrimSpace(hintedMIME))
+	if mime == "" {
+		mime = strings.ToLower(sniff)
+	}
+
+	switch mime {
+	case "image/jpeg", "image/jpg":
+		mime = "image/jpeg"
+		if !(len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF) {
+			return nil, "", errors.New("invalid JPEG/JPG image data signature")
+		}
+	case "image/png":
+		sig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		if !(len(data) >= 8 && string(data[:8]) == string(sig)) {
+			return nil, "", errors.New("invalid PNG image data signature")
+		}
+	default:
+		return nil, "", errors.New("unsupported image MIME type")
+	}
+	return data, mime, nil
 }
