@@ -1,11 +1,13 @@
 package http
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,6 +16,10 @@ import (
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 )
+
+type updatePhotoRequest struct {
+	Photo string `json:"photo"` // base64 encoded string
+}
 
 type EmployeeHandler struct {
 	empUsecase *usecase.EmployeeUsecase
@@ -212,6 +218,126 @@ type updateEmployeeRequest struct {
 	Province string  `json:"province"`
 	Phone    string  `json:"phone"`
 	Photo    *string `json:"photo"` // base64 encoded string
+}
+
+func (h *EmployeeHandler) PutPhoto(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/employee/"), "/photo")
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
+	var req updatePhotoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
+		return
+	}
+
+	data, mime, err := decodeAndDetectMIME(req.Photo)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid photo encoding"})
+		return
+	}
+
+	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrBadRequest) {
+			status = http.StatusBadRequest
+		} else if errors.Is(err, domain.ErrNotFound) {
+			status = http.StatusNotFound
+		} else if errors.Is(err, domain.ErrDeleted) {
+			status = http.StatusGone
+		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
+			status = http.StatusBadRequest
+		}
+		writeJSON(w, status, map[string]string{"error": err.Error()})
+		return
+	}
+	log.Printf("Employee with ID %s photo updated\n", id)
+	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
+}
+
+func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/employee/"), "/photo")
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
+	if err := r.ParseMultipartForm(6 << 20); err != nil { // 6 MB limit form
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart form data"})
+		return
+	}
+
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read photo file"})
+		return
+	}
+	defer file.Close()
+
+	// read max 5 MB + 1 byte to check size
+	const maxPhotoSize = 5 * 1024 * 1024
+	buf := bytes.NewBuffer(nil)
+
+	if _, err := io.CopyN(buf, file, maxPhotoSize+1); err != nil && err != io.EOF {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to read photo file"})
+		return
+	}
+
+	if buf.Len() > maxPhotoSize {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo size exceeds the limit"})
+		return
+	}
+
+	data := buf.Bytes()
+	sniff := http.DetectContentType(data[:min(512, len(data))])
+	mime := strings.ToLower(sniff)
+
+	switch mime {
+	case "image/jpeg", "image/jpg":
+		mime = "image/jpeg"
+	case "image/png":
+		mime = "image/png"
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported image MIME type"})
+		return
+	}
+
+	// validate signature
+	switch mime {
+	case "image/jpeg", "image/jpg":
+		mime = "image/jpeg"
+		if !(len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JPEG/JPG image data signature"})
+			return
+		}
+	case "image/png":
+		sig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		if !(len(data) >= 8 && string(data[:8]) == string(sig)) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid PNG image data signature"})
+			return
+		}
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported image MIME type"})
+		return
+	}
+
+	_ = header // to avoid unused variable warning
+
+	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrBadRequest) {
+			status = http.StatusBadRequest
+		} else if errors.Is(err, domain.ErrNotFound) {
+			status = http.StatusNotFound
+		} else if errors.Is(err, domain.ErrDeleted) {
+			status = http.StatusGone
+		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
+			status = http.StatusBadRequest
+		}
+		writeJSON(w, status, map[string]string{"error": err.Error()})
+		return
+	}
+	log.Printf("Employee with ID %s photo updated\n", id)
+	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
+
 }
 
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {

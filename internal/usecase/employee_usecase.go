@@ -169,6 +169,31 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 	return u.repo.Update(employee)
 }
 
+func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, id string, photo []byte, photoMIME string) error {
+	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
+		if callerRole == domain.RoleStaff && callerID == id {
+			// Allow staff to update their own employee record
+		} else {
+			return domain.ErrForbidden
+		}
+	}
+
+	if len(photo) > maxPhotoSize {
+		return domain.ErrPhotoTooLarge
+	}
+
+	employee, err := u.repo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	employee.Photo = photo
+	employee.PhotoMIME = photoMIME
+	employee.UpdatedAt = time.Now()
+
+	return u.repo.Update(employee)
+}
+
 func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
 	if !canManageAll(callerRole) {
 		return domain.ErrForbidden
