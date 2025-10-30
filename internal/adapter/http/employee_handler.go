@@ -55,6 +55,21 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+func writeErrorJSON(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	switch {
+	case errors.Is(err, domain.ErrBadRequest):
+		status = http.StatusBadRequest
+	case errors.Is(err, domain.ErrNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, domain.ErrDeleted):
+		status = http.StatusGone
+	case errors.Is(err, domain.ErrForbidden):
+		status = http.StatusForbidden
+	}
+	writeJSON(w, status, map[string]string{"error": err.Error()})
+}
+
 func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
 	items, err := h.empUsecase.FindAll(caller)
@@ -76,16 +91,7 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.empUsecase.FindByID(callerRole, callerID, id)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrForbidden):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
-		case errors.Is(err, domain.ErrNotFound):
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "employee not found"})
-		case errors.Is(err, domain.ErrDeleted):
-			writeJSON(w, http.StatusGone, map[string]string{"error": "employee has been deleted"})
-		default:
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		}
+		writeErrorJSON(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
@@ -100,16 +106,7 @@ func (h *EmployeeHandler) GetPhoto(w http.ResponseWriter, r *http.Request) {
 
 	employee, err := h.empUsecase.FindByID(callerRole, callerID, id)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrForbidden):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
-		case errors.Is(err, domain.ErrNotFound):
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "employee not found"})
-		case errors.Is(err, domain.ErrDeleted):
-			writeJSON(w, http.StatusGone, map[string]string{"error": "employee has been deleted"})
-		default:
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		}
+		writeErrorJSON(w, err)
 		return
 	}
 
@@ -186,18 +183,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.empUsecase.Create(caller, employee); err != nil {
-		status := http.StatusInternalServerError
-		switch {
-		case errors.Is(err, domain.ErrForbidden):
-			status = http.StatusForbidden
-		case errors.Is(err, domain.ErrBadRequest):
-			status = http.StatusBadRequest
-		case errors.Is(err, domain.ErrDuplicate):
-			status = http.StatusConflict
-		case errors.Is(err, domain.ErrPhotoTooLarge):
-			status = http.StatusBadRequest
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeErrorJSON(w, err)
 		return
 	}
 	log.Println("Employee created with ID:", employee.ID)
@@ -238,17 +224,7 @@ func (h *EmployeeHandler) PutPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrBadRequest) {
-			status = http.StatusBadRequest
-		} else if errors.Is(err, domain.ErrNotFound) {
-			status = http.StatusNotFound
-		} else if errors.Is(err, domain.ErrDeleted) {
-			status = http.StatusGone
-		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
-			status = http.StatusBadRequest
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeErrorJSON(w, err)
 		return
 	}
 	log.Printf("Employee with ID %s photo updated\n", id)
@@ -322,17 +298,7 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 	_ = header // to avoid unused variable warning
 
 	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrBadRequest) {
-			status = http.StatusBadRequest
-		} else if errors.Is(err, domain.ErrNotFound) {
-			status = http.StatusNotFound
-		} else if errors.Is(err, domain.ErrDeleted) {
-			status = http.StatusGone
-		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
-			status = http.StatusBadRequest
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeErrorJSON(w, err)
 		return
 	}
 	log.Printf("Employee with ID %s photo updated\n", id)
@@ -388,17 +354,7 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.empUsecase.Update(callerRole, callerID, employee); err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrBadRequest) {
-			status = http.StatusBadRequest
-		} else if errors.Is(err, domain.ErrNotFound) {
-			status = http.StatusNotFound
-		} else if errors.Is(err, domain.ErrDeleted) {
-			status = http.StatusGone
-		} else if errors.Is(err, domain.ErrPhotoTooLarge) {
-			status = http.StatusBadRequest
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeErrorJSON(w, err)
 		return
 	}
 	log.Printf("Employee with ID %s updated\n", id)
@@ -409,17 +365,7 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 	caller := getCallerRoleFromContext(r)
 	if err := h.empUsecase.Delete(caller, id); err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrBadRequest) {
-			status = http.StatusBadRequest
-		} else if errors.Is(err, domain.ErrNotFound) {
-			status = http.StatusNotFound
-		} else if errors.Is(err, domain.ErrDeleted) {
-			status = http.StatusGone
-		} else if errors.Is(err, domain.ErrForbidden) {
-			status = http.StatusForbidden
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeErrorJSON(w, err)
 		return
 	}
 	log.Printf("Employee with ID %s deleted\n", id)
