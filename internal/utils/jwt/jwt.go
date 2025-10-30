@@ -30,12 +30,14 @@ func (s *Signer) Generate(userID, email, role string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TTL)),
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	return token.SignedString(s.Secret)
 }
 
 func (s *Signer) Parse(tokenStr string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (any, error) {
 		return s.Secret, nil
 	})
 	if err != nil {
@@ -44,5 +46,6 @@ func (s *Signer) Parse(tokenStr string) (*Claims, error) {
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
+
 	return nil, jwt.ErrTokenInvalidClaims
 }

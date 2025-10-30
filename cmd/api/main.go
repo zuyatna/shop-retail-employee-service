@@ -86,5 +86,6 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("shutdown error: %v", err)
 	}
+
 	log.Println("Server gracefully stopped")
 }

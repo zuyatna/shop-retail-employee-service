@@ -46,6 +46,7 @@ func decoderPhotoString(s string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return data, nil
 }
 
@@ -67,6 +68,7 @@ func writeErrorJSON(w http.ResponseWriter, err error) {
 	case errors.Is(err, domain.ErrForbidden):
 		status = http.StatusForbidden
 	}
+
 	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
@@ -81,6 +83,7 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
+
 	writeJSON(w, http.StatusOK, items)
 }
 
@@ -94,6 +97,7 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
+
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -186,6 +190,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
+
 	log.Println("Employee created with ID:", employee.ID)
 	writeJSON(w, http.StatusCreated, map[string]string{"id": employee.ID})
 }
@@ -227,6 +232,7 @@ func (h *EmployeeHandler) PutPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
+
 	log.Printf("Employee with ID %s photo updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
 }
@@ -301,9 +307,9 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 		writeErrorJSON(w, err)
 		return
 	}
+
 	log.Printf("Employee with ID %s photo updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
-
 }
 
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -357,6 +363,7 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
+
 	log.Printf("Employee with ID %s updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee updated"})
 }
@@ -414,5 +421,6 @@ func decodeAndDetectMIME(s string) ([]byte, string, error) {
 	default:
 		return nil, "", errors.New("unsupported image MIME type")
 	}
+
 	return data, mime, nil
 }

@@ -9,6 +9,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const maxPhotoSize = 5 * 1024 * 1024 // 5MB
+
 type IDGenerator interface {
 	NewID() (string, error)
 }
@@ -17,8 +19,6 @@ type EmployeeUsecase struct {
 	repo  domain.EmployeeRepository
 	idGen IDGenerator
 }
-
-const maxPhotoSize = 5 * 1024 * 1024 // 5MB
 
 func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *EmployeeUsecase {
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
@@ -34,6 +34,7 @@ func validateRequireContract(employee *domain.Employee) error {
 	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
 		return domain.ErrBadRequest
 	}
+
 	return nil
 }
 

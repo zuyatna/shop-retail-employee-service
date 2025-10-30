@@ -45,5 +45,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	writeJSON(w, http.StatusOK, loginResponse{Token: token})
 }
