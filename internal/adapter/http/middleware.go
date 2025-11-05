@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
-	jwtutils "github.com/zuyatna/shop-retail-employee-service/internal/utils/jwt"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
+	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
 )
 
 type ctxKey string
@@ -19,12 +19,12 @@ const (
 
 type AuthMiddleware struct {
 	parser interface {
-		Parse(tokenStr string) (*jwtutils.Claims, error)
+		Parse(tokenStr string) (*jwtutil.Claims, error)
 	}
 }
 
 func NewAuthMiddleware(parser interface {
-	Parse(tokenStr string) (*jwtutils.Claims, error)
+	Parse(tokenStr string) (*jwtutil.Claims, error)
 }) *AuthMiddleware {
 	return &AuthMiddleware{parser: parser}
 }

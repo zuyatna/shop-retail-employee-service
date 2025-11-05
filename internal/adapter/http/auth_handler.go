@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 )
 

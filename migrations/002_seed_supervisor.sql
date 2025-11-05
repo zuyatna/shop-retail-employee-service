@@ -21,7 +21,7 @@ INSERT INTO employees (
     '00000000-0000-0000-0000-000000000001',
     'Initial Supervisor',
     'supervisor@shop.local',
-    '$2a$10$/kplRAY3kluIEE0kYQRExuvE0JkZFyWebVc2KDSpx.1Hx7VJp8d6S',
+    '$2a$12$yBOjBkd6j2tvxbThLwCzPOKP5DfaAd99FRpnPwAzvfdeo9939xukS',
     'supervisor',
     'Supervisor',
     0,

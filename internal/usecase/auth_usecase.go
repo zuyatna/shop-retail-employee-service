@@ -3,7 +3,7 @@ package usecase
 import (
 	"errors"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
+	"github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 

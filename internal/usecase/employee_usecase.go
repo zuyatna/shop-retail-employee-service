@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,8 +31,8 @@ func validateRequireContract(employee *domain.Employee) error {
 	employee.PasswordHash = trim(employee.PasswordHash)
 	employee.Phone = trim(employee.Phone)
 
-	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
-		return domain.ErrBadRequest
+	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Province == "" || employee.Phone == "" {
+		return errors.New("invalid data input, please check data requirement")
 	}
 
 	return nil
@@ -54,10 +54,6 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 
 	if err := validateRequireContract(employee); err != nil {
 		return err
-	}
-
-	if employee.PhotoProvided && employee.Photo != nil && len(employee.Photo) > maxPhotoSize {
-		return domain.ErrPhotoTooLarge
 	}
 
 	if employee.ID == "" {
@@ -172,15 +168,23 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 
 func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, id string, photo []byte, photoMIME string) error {
 	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
-		if callerRole == domain.RoleStaff && callerID == id {
-			// Allow staff to update their own employee record
-		} else {
+		if !(callerRole == domain.RoleStaff && callerID == id) {
 			return domain.ErrForbidden
 		}
 	}
 
+	if len(photo) == 0 {
+		return domain.ErrBadRequest
+	}
+
 	if len(photo) > maxPhotoSize {
 		return domain.ErrPhotoTooLarge
+	}
+
+	switch photoMIME {
+	case "image/jpeg", "image/png", "image/gif":
+	default:
+		return domain.ErrBadRequest
 	}
 
 	employee, err := u.repo.FindByID(id)
@@ -189,7 +193,12 @@ func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, i
 	}
 
 	employee.Photo = photo
-	employee.PhotoMIME = photoMIME
+
+	if photoMIME == "image/jpg" {
+		photoMIME = "image/jpeg"
+	}
+
+	employee.PhotoMIME = strings.ToLower(photoMIME)
 	employee.UpdatedAt = time.Now()
 
 	return u.repo.Update(employee)

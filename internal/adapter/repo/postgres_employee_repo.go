@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 )
 
 type PostgresEmployeeRepo struct {
@@ -56,8 +56,10 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo, photo_mime
-			FROM employees WHERE id = $1`
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at,
+                    COALESCE(address, ''), COALESCE(district, ''), COALESCE(city, ''), COALESCE(province, ''), COALESCE(phone, ''),
+                    COALESCE(photo, ''::bytea), COALESCE(photo_mime, '')
+            FROM employees WHERE id = $1`
 
 	row := r.pool.QueryRow(ctx, query, id)
 	employee := &domain.Employee{}
@@ -82,10 +84,12 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone
-			  FROM employees
-			  WHERE deleted_at IS NULL
-			  ORDER BY created_at DESC`
+	query := `SELECT id, name, email, role, position, salary, status, created_at, updated_at, deleted_at,
+                    COALESCE(address, ''), COALESCE(district, ''), COALESCE(city, ''), COALESCE(province, ''), COALESCE(phone, '')
+              FROM employees
+              WHERE deleted_at IS NULL
+              ORDER BY created_at DESC`
+
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		log.Println("Error finding all employees:", err)
@@ -117,8 +121,11 @@ func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, erro
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo, photo_mime
-			  FROM employees WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at,
+                    COALESCE(address, ''), COALESCE(district, ''), COALESCE(city, ''), COALESCE(province, ''), COALESCE(phone, ''),
+                    COALESCE(photo, ''::bytea), COALESCE(photo_mime, '')
+              FROM employees WHERE email = $1`
+
 	row := r.pool.QueryRow(ctx, query, email)
 	employee := &domain.Employee{}
 	err := row.Scan(&employee.ID, &employee.Name, &employee.Email, &employee.PasswordHash,

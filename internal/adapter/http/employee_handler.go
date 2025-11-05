@@ -12,14 +12,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 )
-
-type updatePhotoRequest struct {
-	Photo string `json:"photo"` // base64 encoded string
-}
 
 type EmployeeHandler struct {
 	empUsecase *usecase.EmployeeUsecase
@@ -101,9 +98,35 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
+func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
+	if strings.TrimSpace(callerID) == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	employee, err := h.empUsecase.FindByID(callerRole, callerID, callerID)
+	if err != nil {
+		writeErrorJSON(w, err)
+		return
+	}
+
+	employeeNew := *employee
+	employeeNew.PasswordHash = ""
+	employeeNew.Salary = 0
+	employeeNew.CreatedAt = time.Time{}
+	employeeNew.UpdatedAt = time.Time{}
+	employeeNew.DeletedAt = nil
+	employeeNew.Phone = ""
+	employeeNew.Photo = nil
+
+	writeJSON(w, http.StatusOK, &employeeNew)
+}
+
 func (h *EmployeeHandler) GetPhoto(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/employee/")
-	id = strings.TrimSuffix(id, "/photo")
+	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
@@ -163,27 +186,19 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	photo, err := decoderPhotoString(req.Photo)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid photo encoding"})
-		return
-	}
-
 	employee := &domain.Employee{
-		Name:          req.Name,
-		Email:         req.Email,
-		PasswordHash:  req.Password,
-		Role:          domain.Role(req.Role),
-		Position:      req.Position,
-		Salary:        req.Salary,
-		Status:        req.Status,
-		Address:       req.Address,
-		District:      req.District,
-		City:          req.City,
-		Province:      req.Province,
-		Phone:         req.Phone,
-		Photo:         photo,
-		PhotoProvided: photo != nil,
+		Name:         req.Name,
+		Email:        req.Email,
+		PasswordHash: req.Password,
+		Role:         domain.Role(req.Role),
+		Position:     req.Position,
+		Salary:       req.Salary,
+		Status:       req.Status,
+		Address:      req.Address,
+		District:     req.District,
+		City:         req.City,
+		Province:     req.Province,
+		Phone:        req.Phone,
 	}
 
 	if err := h.empUsecase.Create(caller, employee); err != nil {
@@ -211,34 +226,8 @@ type updateEmployeeRequest struct {
 	Photo    *string `json:"photo"` // base64 encoded string
 }
 
-func (h *EmployeeHandler) PutPhoto(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/employee/"), "/photo")
-	callerRole := getCallerRoleFromContext(r)
-	callerID := getCallerIDFromContext(r)
-
-	var req updatePhotoRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
-		return
-	}
-
-	data, mime, err := decodeAndDetectMIME(req.Photo)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid photo encoding"})
-		return
-	}
-
-	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
-		writeErrorJSON(w, err)
-		return
-	}
-
-	log.Printf("Employee with ID %s photo updated\n", id)
-	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
-}
-
 func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/employee/"), "/photo")
+	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
@@ -312,6 +301,19 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
 }
 
+func (h EmployeeHandler) DeletePhoto(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
+	callerRole := getCallerRoleFromContext(r)
+	callerID := getCallerIDFromContext(r)
+
+	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, nil, ""); err != nil {
+		writeErrorJSON(w, err)
+		return
+	}
+	log.Printf("Employee with ID %s photo deleted\n", id)
+	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo deleted"})
+}
+
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 
@@ -377,50 +379,4 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Employee with ID %s deleted\n", id)
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func decodeAndDetectMIME(s string) ([]byte, string, error) {
-	trimmed := strings.TrimSpace(s)
-	if trimmed == "" {
-		return nil, "", errors.New("empty photo")
-	}
-
-	var hintedMIME string
-	if idx := strings.Index(trimmed, ","); idx != -1 && strings.Contains(strings.ToLower(trimmed[:idx]), "base64") {
-		header := trimmed[:idx]
-		trimmed = trimmed[idx+1:]
-		if p := strings.Index(header, ":"); p != -1 {
-			if q := strings.Index(header[p+1:], ";"); q != -1 {
-				hintedMIME = header[p+1 : p+1+q]
-			}
-		}
-	}
-
-	data, err := base64.StdEncoding.DecodeString(trimmed)
-	if err != nil || len(data) == 0 {
-		return nil, "", errors.New("invalid base64 encoding")
-	}
-
-	sniff := http.DetectContentType(data[:min(512, len(data))])
-	mime := strings.ToLower(strings.TrimSpace(hintedMIME))
-	if mime == "" {
-		mime = strings.ToLower(sniff)
-	}
-
-	switch mime {
-	case "image/jpeg", "image/jpg":
-		mime = "image/jpeg"
-		if !(len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF) {
-			return nil, "", errors.New("invalid JPEG/JPG image data signature")
-		}
-	case "image/png":
-		sig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
-		if !(len(data) >= 8 && string(data[:8]) == string(sig)) {
-			return nil, "", errors.New("invalid PNG image data signature")
-		}
-	default:
-		return nil, "", errors.New("unsupported image MIME type")
-	}
-
-	return data, mime, nil
 }

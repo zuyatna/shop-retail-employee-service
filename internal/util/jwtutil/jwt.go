@@ -1,4 +1,4 @@
-package jwtutils
+package jwtutil
 
 import (
 	"time"

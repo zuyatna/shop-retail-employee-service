@@ -14,9 +14,10 @@ import (
 	httpAdapter "github.com/zuyatna/shop-retail-employee-service/internal/adapter/http"
 	"github.com/zuyatna/shop-retail-employee-service/internal/adapter/repo"
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
+	"github.com/zuyatna/shop-retail-employee-service/internal/router"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
-	"github.com/zuyatna/shop-retail-employee-service/internal/utils/idgen"
-	jwtutils "github.com/zuyatna/shop-retail-employee-service/internal/utils/jwt"
+	"github.com/zuyatna/shop-retail-employee-service/internal/util/idgen"
+	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
 )
 
 func main() {
@@ -43,7 +44,7 @@ func main() {
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
 	uuidGen := idgen.NewUUIDv7Generator()
 	empUsecase := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
-	signer := &jwtutils.Signer{Secret: []byte(cfg.JWTSecret), Issuer: cfg.JWTIssuer, TTL: time.Duration(cfg.JWTTTL) * time.Second}
+	signer := &jwtutil.Signer{Secret: []byte(cfg.JWTSecret), Issuer: cfg.JWTIssuer, TTL: time.Duration(cfg.JWTTTL) * time.Second}
 	authUsecase := usecase.NewAuthUsecase(pgRepo, signer)
 
 	// handler
@@ -53,17 +54,7 @@ func main() {
 	// middleware
 	authMiddleware := httpAdapter.NewAuthMiddleware(signer)
 
-	mux := http.NewServeMux()
-
-	// public routes
-	mux.HandleFunc("POST /login", authHandler.Login)
-
-	// protected routes
-	mux.Handle("POST /employee", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Create)))
-	mux.Handle("GET /employees", authMiddleware.WithAuth(http.HandlerFunc(empHandler.List)))
-	mux.Handle("GET /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Get)))
-	mux.Handle("PUT /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Update)))
-	mux.Handle("DELETE /employee/", authMiddleware.WithAuth(http.HandlerFunc(empHandler.Delete)))
+	mux := router.EmployeeRoutes(authHandler, empHandler, authMiddleware)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
