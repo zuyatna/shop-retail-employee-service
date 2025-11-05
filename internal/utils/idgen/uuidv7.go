@@ -13,5 +13,6 @@ func (g *UUIDv7Generator) NewID() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return u.String(), nil
 }

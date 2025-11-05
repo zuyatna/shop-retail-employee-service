@@ -9,6 +9,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const maxPhotoSize = 5 * 1024 * 1024 // 5MB
+
 type IDGenerator interface {
 	NewID() (string, error)
 }
@@ -17,8 +19,6 @@ type EmployeeUsecase struct {
 	repo  domain.EmployeeRepository
 	idGen IDGenerator
 }
-
-const maxPhotoSize = 5 * 1024 * 1024 // 5MB
 
 func NewEmployeeUsecase(repo domain.EmployeeRepository, idGen IDGenerator) *EmployeeUsecase {
 	return &EmployeeUsecase{repo: repo, idGen: idGen}
@@ -34,6 +34,7 @@ func validateRequireContract(employee *domain.Employee) error {
 	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Phone == "" {
 		return domain.ErrBadRequest
 	}
+
 	return nil
 }
 
@@ -164,6 +165,31 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 		}
 		employee.PasswordHash = existing.PasswordHash
 	}
+	employee.UpdatedAt = time.Now()
+
+	return u.repo.Update(employee)
+}
+
+func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, id string, photo []byte, photoMIME string) error {
+	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
+		if callerRole == domain.RoleStaff && callerID == id {
+			// Allow staff to update their own employee record
+		} else {
+			return domain.ErrForbidden
+		}
+	}
+
+	if len(photo) > maxPhotoSize {
+		return domain.ErrPhotoTooLarge
+	}
+
+	employee, err := u.repo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	employee.Photo = photo
+	employee.PhotoMIME = photoMIME
 	employee.UpdatedAt = time.Now()
 
 	return u.repo.Update(employee)

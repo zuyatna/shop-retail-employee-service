@@ -58,6 +58,7 @@ func getCallerRoleFromContext(r *http.Request) domain.Role {
 			return role
 		}
 	}
+
 	return domain.RoleStaff
 }
 
@@ -67,5 +68,6 @@ func getCallerIDFromContext(r *http.Request) string {
 			return id
 		}
 	}
+
 	return ""
 }
