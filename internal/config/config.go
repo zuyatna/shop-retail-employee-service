@@ -61,6 +61,5 @@ func atoiMust(s string) int {
 	if err != nil {
 		panic(fmt.Sprintf("invalid integer value: %s", s))
 	}
-
 	return i
 }

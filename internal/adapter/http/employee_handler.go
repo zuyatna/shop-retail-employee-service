@@ -39,11 +39,11 @@ func decoderPhotoString(s string) ([]byte, error) {
 			trimmed = trimmed[idx+1:]
 		}
 	}
+
 	data, err := base64.StdEncoding.DecodeString(trimmed)
 	if err != nil {
 		return nil, err
 	}
-
 	return data, nil
 }
 
@@ -55,6 +55,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeErrorJSON(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
+	
 	switch {
 	case errors.Is(err, domain.ErrBadRequest):
 		status = http.StatusBadRequest
@@ -65,12 +66,12 @@ func writeErrorJSON(w http.ResponseWriter, err error) {
 	case errors.Is(err, domain.ErrForbidden):
 		status = http.StatusForbidden
 	}
-
 	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
 func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
+
 	items, err := h.empUsecase.FindAll(caller)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -80,7 +81,6 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-
 	writeJSON(w, http.StatusOK, items)
 }
 
@@ -94,7 +94,6 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
-
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -205,7 +204,6 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
-
 	log.Println("Employee created with ID:", employee.ID)
 	writeJSON(w, http.StatusCreated, map[string]string{"id": employee.ID})
 }
@@ -296,7 +294,6 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 		writeErrorJSON(w, err)
 		return
 	}
-
 	log.Printf("Employee with ID %s photo updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
 }
@@ -365,7 +362,6 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		writeErrorJSON(w, err)
 		return
 	}
-
 	log.Printf("Employee with ID %s updated\n", id)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee updated"})
 }

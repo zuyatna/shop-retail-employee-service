@@ -47,7 +47,6 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 		Email: employee.Email,
 		Role:  employee.Role,
 	}
-
 	log.Println("Employee created: ", res)
 	return nil
 }
@@ -74,6 +73,7 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 		log.Println("Error finding employee by ID:", err)
 		return nil, err
 	}
+
 	if employee.DeletedAt != nil {
 		return nil, domain.ErrDeleted
 	}
@@ -110,6 +110,7 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 		}
 		employees = append(employees, employee)
 	}
+
 	if err := rows.Err(); err != nil {
 		log.Println("Error iterating over employees:", err)
 		return nil, err
@@ -139,6 +140,7 @@ func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, erro
 		log.Println("Error finding employee by email:", err)
 		return nil, err
 	}
+
 	if employee.DeletedAt != nil {
 		return nil, domain.ErrDeleted
 	}
@@ -162,6 +164,7 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 		log.Println("Error updating employee:", err)
 		return err
 	}
+
 	if cmd.RowsAffected() == 0 {
 		_, err := r.FindByID(employee.ID)
 		if err == domain.ErrDeleted {
@@ -184,6 +187,7 @@ func (r *PostgresEmployeeRepo) Delete(id string) error {
 		log.Println("Error deleting employee:", err)
 		return err
 	}
+	
 	if cmd.RowsAffected() == 0 {
 		_, err := r.FindByID(id)
 		if err == domain.ErrDeleted {

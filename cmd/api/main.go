@@ -75,8 +75,7 @@ func main() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("shutdown error: %v", err)
+		log.Printf("Shutdown error: %v", err)
 	}
-
 	log.Println("Server gracefully stopped")
 }

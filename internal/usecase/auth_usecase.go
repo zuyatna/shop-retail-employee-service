@@ -40,6 +40,5 @@ func (u *AuthUsecase) Login(email, password string) (string, *domain.Employee, e
 	if err != nil {
 		return "", nil, err
 	}
-
 	return token, employee, nil
 }

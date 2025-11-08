@@ -32,7 +32,6 @@ func (s *Signer) Generate(userID, email, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	return token.SignedString(s.Secret)
 }
 
@@ -46,6 +45,5 @@ func (s *Signer) Parse(tokenStr string) (*Claims, error) {
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-
 	return nil, jwt.ErrTokenInvalidClaims
 }

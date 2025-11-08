@@ -34,7 +34,6 @@ func validateRequireContract(employee *domain.Employee) error {
 	if employee.Name == "" || employee.Email == "" || employee.Address == "" || employee.District == "" || employee.City == "" || employee.Province == "" || employee.Phone == "" {
 		return errors.New("invalid data input, please check data requirement")
 	}
-
 	return nil
 }
 
@@ -80,7 +79,6 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 
 	now := time.Now()
 	employee.CreatedAt, employee.UpdatedAt = now, now
-
 	return u.repo.Create(employee)
 }
 
@@ -143,8 +141,6 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 		return domain.ErrPhotoTooLarge
 	}
 
-	// if password is not empty, hash it. Otherwise, keep the existing hash.
-	// this allows updating other fields without changing the password.
 	employee.Email = trim(strings.ToLower(employee.Email))
 	if employee.PasswordHash != "" {
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(employee.PasswordHash), bcrypt.DefaultCost)
@@ -161,8 +157,8 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 		}
 		employee.PasswordHash = existing.PasswordHash
 	}
-	employee.UpdatedAt = time.Now()
 
+	employee.UpdatedAt = time.Now()
 	return u.repo.Update(employee)
 }
 
@@ -200,7 +196,6 @@ func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, i
 
 	employee.PhotoMIME = strings.ToLower(photoMIME)
 	employee.UpdatedAt = time.Now()
-
 	return u.repo.Update(employee)
 }
 
