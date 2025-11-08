@@ -2,40 +2,40 @@
 A replication of employee shop retail using Go
 
 # Project Structures
-- shop-retail-employee
-|- cmd
-|   |- api
-|       |- main.go
-|- internal
-|   |- adapter
-|   |   |- http
-|   |   |    |- auth_handler.go
-|   |   |    |- employee_handler.go
-|   |   |    |- middleware.go 
-|   |   |- repo
-|   |        |- postgres_employee_repo.go
-|   |- config
-|   |   |- config.go
-|   |- model
-|   |   |- employee.go
-|   |- router
-|   |   |- employee_routes.go
-|   |- usecase
-|   |   |- auth_usecase.go
-|   |   |- employee_usecase.go
-|   |- util
-|   |   |- idgen
-|   |   |   |- uuidv7.go
-|   |   |- jwtutil
-|   |       |- jwt.go
-|- migrations
-|   |- 001_init.sql
-|   |- 002_seed_supervisor.sql
-|- .env.example
-|- .gitignore
-|- go.mod
-|- go.sum
-|- README.md
+shop-retail-employee/
+├── cmd/
+|   └── api/
+|       └── main.go
+├── internal/
+|   ├── adapter/
+|   |   ├── http/
+|   |   |    ├── auth_handler.go
+|   |   |    ├── employee_handler.go
+|   |   |    └── middleware.go 
+|   |   └── repo/
+|   |        └── postgres_employee_repo.go
+|   ├── config/
+|   |   └── config.go
+|   ├── model/
+|   |   └── employee.go
+|   ├── router/
+|   |   └── employee_routes.go
+|   ├── usecase/
+|   |   ├── auth_usecase.go
+|   |   └── employee_usecase.go
+|   ├── util/
+|   |   ├── idgen/
+|   |   |   └── uuidv7.go
+|   |   └── jwtutil/
+|   |       └── jwt.go
+├── migrations/
+|   ├── 001_init.sql
+|   └── 002_seed_supervisor.sql
+├── .env.example
+├── .gitignore
+├── go.mod
+├── go.sum
+└── README.md
 
 ### Docker Image
 ```
