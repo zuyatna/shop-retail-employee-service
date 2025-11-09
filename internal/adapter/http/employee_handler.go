@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -12,11 +13,19 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 )
+
+// read max 5 MB + 1 byte to check size
+const maxPhotoSize = 5 * 1024 * 1024
+
+var bufPool = sync.Pool{
+	New: func() any { return bytes.NewBuffer(make([]byte, 0, 1024)) },
+}
 
 type EmployeeHandler struct {
 	empUsecase *usecase.EmployeeUsecase
@@ -40,11 +49,17 @@ func decoderPhotoString(s string) ([]byte, error) {
 		}
 	}
 
-	data, err := base64.StdEncoding.DecodeString(trimmed)
-	if err != nil {
+	rdr := base64.NewDecoder(base64.StdEncoding, strings.NewReader(trimmed))
+	b := bufPool.Get().(*bytes.Buffer)
+	b.Reset()
+	defer bufPool.Put(b)
+
+	if _, err := io.Copy(b, rdr); err != nil {
 		return nil, err
 	}
-	return data, nil
+
+	out := append([]byte(nil), b.Bytes()...) // copy before returning if pool reuse concern
+	return out, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -55,7 +70,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeErrorJSON(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
-	
+
 	switch {
 	case errors.Is(err, domain.ErrBadRequest):
 		status = http.StatusBadRequest
@@ -69,10 +84,10 @@ func writeErrorJSON(w http.ResponseWriter, err error) {
 	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
-func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) List(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
 
-	items, err := h.empUsecase.FindAll(caller)
+	items, err := h.empUsecase.FindAll(ctx, caller)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrForbidden) {
@@ -84,12 +99,12 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, items)
 }
 
-func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
-	item, err := h.empUsecase.FindByID(callerRole, callerID, id)
+	item, err := h.empUsecase.FindByID(ctx, callerRole, callerID, id)
 	if err != nil {
 		writeErrorJSON(w, err)
 		return
@@ -97,7 +112,7 @@ func (h *EmployeeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
-func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) GetMe(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
@@ -106,7 +121,7 @@ func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	employee, err := h.empUsecase.FindByID(callerRole, callerID, callerID)
+	employee, err := h.empUsecase.FindByID(ctx, callerRole, callerID, callerID)
 	if err != nil {
 		writeErrorJSON(w, err)
 		return
@@ -114,23 +129,21 @@ func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	employeeNew := *employee
 	employeeNew.PasswordHash = ""
-	employeeNew.Salary = 0
 	employeeNew.CreatedAt = time.Time{}
 	employeeNew.UpdatedAt = time.Time{}
 	employeeNew.DeletedAt = nil
-	employeeNew.Phone = ""
 	employeeNew.Photo = nil
 
 	writeJSON(w, http.StatusOK, &employeeNew)
 }
 
-func (h *EmployeeHandler) GetPhoto(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) GetPhoto(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
-	employee, err := h.empUsecase.FindByID(callerRole, callerID, id)
+	employee, err := h.empUsecase.FindByID(ctx, callerRole, callerID, id)
 	if err != nil {
 		writeErrorJSON(w, err)
 		return
@@ -177,7 +190,7 @@ type createEmployeeRequest struct {
 	Photo    string  `json:"photo"` // base64 encoded string
 }
 
-func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
 	var req createEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -200,7 +213,7 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Phone:        req.Phone,
 	}
 
-	if err := h.empUsecase.Create(caller, employee); err != nil {
+	if err := h.empUsecase.Create(ctx, caller, employee); err != nil {
 		writeErrorJSON(w, err)
 		return
 	}
@@ -224,15 +237,20 @@ type updateEmployeeRequest struct {
 	Photo    *string `json:"photo"` // base64 encoded string
 }
 
-func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) PutPhotoMultipart(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
-	if err := r.ParseMultipartForm(6 << 20); err != nil { // 6 MB limit form
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart form data"})
+	r.Body = http.MaxBytesReader(w, r.Body, 6<<20) // 6 MB max
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to parse multipart form"})
 		return
 	}
+
+	b := bufPool.Get().(*bytes.Buffer)
+	b.Reset()
+	defer bufPool.Put(b)
 
 	file, header, err := r.FormFile("photo")
 	if err != nil {
@@ -241,21 +259,21 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 	}
 	defer file.Close()
 
-	// read max 5 MB + 1 byte to check size
-	const maxPhotoSize = 5 * 1024 * 1024
-	buf := bytes.NewBuffer(nil)
-
-	if _, err := io.CopyN(buf, file, maxPhotoSize+1); err != nil && err != io.EOF {
+	if _, err := io.CopyN(b, file, maxPhotoSize+1); err != nil && err != io.EOF {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to read photo file"})
 		return
 	}
 
-	if buf.Len() > maxPhotoSize {
+	if b.Len() > maxPhotoSize {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo size exceeds the limit"})
 		return
 	}
 
-	data := buf.Bytes()
+	// copy data from buffer pool to new slice
+	data := make([]byte, b.Len())
+	copy(data, b.Bytes())
+
+	// detect MIME type
 	sniff := http.DetectContentType(data[:min(512, len(data))])
 	mime := strings.ToLower(sniff)
 
@@ -290,7 +308,7 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 
 	_ = header // to avoid unused variable warning
 
-	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, data, mime); err != nil {
+	if err := h.empUsecase.UpdatePhoto(ctx, callerRole, callerID, id, data, mime); err != nil {
 		writeErrorJSON(w, err)
 		return
 	}
@@ -298,12 +316,12 @@ func (h *EmployeeHandler) PutPhotoMultipart(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
 }
 
-func (h EmployeeHandler) DeletePhoto(w http.ResponseWriter, r *http.Request) {
+func (h EmployeeHandler) DeletePhoto(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
-	if err := h.empUsecase.UpdatePhoto(callerRole, callerID, id, nil, ""); err != nil {
+	if err := h.empUsecase.UpdatePhoto(ctx, callerRole, callerID, id, nil, ""); err != nil {
 		writeErrorJSON(w, err)
 		return
 	}
@@ -311,7 +329,7 @@ func (h EmployeeHandler) DeletePhoto(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo deleted"})
 }
 
-func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 
 	callerRole := getCallerRoleFromContext(r)
@@ -358,7 +376,7 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		employee.PhotoProvided = true
 	}
 
-	if err := h.empUsecase.Update(callerRole, callerID, employee); err != nil {
+	if err := h.empUsecase.Update(ctx, callerRole, callerID, employee); err != nil {
 		writeErrorJSON(w, err)
 		return
 	}
@@ -366,10 +384,10 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee updated"})
 }
 
-func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/")
 	caller := getCallerRoleFromContext(r)
-	if err := h.empUsecase.Delete(caller, id); err != nil {
+	if err := h.empUsecase.Delete(ctx, caller, id); err != nil {
 		writeErrorJSON(w, err)
 		return
 	}

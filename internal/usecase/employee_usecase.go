@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func canManageAll(role domain.Role) bool {
 	}
 }
 
-func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employee) error {
+func (u *EmployeeUsecase) Create(ctx context.Context, callerRole domain.Role, employee *domain.Employee) error {
 	if !canManageAll(callerRole) {
 		return domain.ErrForbidden
 	}
@@ -63,7 +64,7 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 		employee.ID = id
 	}
 
-	_, err := u.repo.FindByEmail(employee.Email)
+	_, err := u.repo.FindByEmail(ctx, employee.Email)
 	if err == nil {
 		return domain.ErrDuplicate
 	}
@@ -79,36 +80,34 @@ func (u *EmployeeUsecase) Create(callerRole domain.Role, employee *domain.Employ
 
 	now := time.Now()
 	employee.CreatedAt, employee.UpdatedAt = now, now
-	return u.repo.Create(employee)
+	return u.repo.Create(ctx, employee)
 }
 
-func (u *EmployeeUsecase) FindAll(callerRole domain.Role) ([]*domain.Employee, error) {
+func (u *EmployeeUsecase) FindAll(ctx context.Context, callerRole domain.Role) ([]*domain.Employee, error) {
 	if !canManageAll(callerRole) {
 		return nil, domain.ErrForbidden
 	}
-	return u.repo.FindAll()
+	return u.repo.FindAll(ctx)
 }
 
-func (u *EmployeeUsecase) FindByID(callerRole domain.Role, callerId, id string) (*domain.Employee, error) {
+func (u *EmployeeUsecase) FindByID(ctx context.Context, callerRole domain.Role, callerId, id string) (*domain.Employee, error) {
 	if callerRole == domain.RoleStaff && callerId != id {
 		return nil, domain.ErrForbidden
 	}
-	return u.repo.FindByID(id)
+	return u.repo.FindByID(ctx, id)
 }
 
-func (u *EmployeeUsecase) FindByEmail(email string) (*domain.Employee, error) {
-	return u.repo.FindByEmail(email)
+func (u *EmployeeUsecase) FindByEmail(ctx context.Context, email string) (*domain.Employee, error) {
+	return u.repo.FindByEmail(ctx, email)
 }
 
-func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employee *domain.Employee) error {
+func (u *EmployeeUsecase) Update(ctx context.Context, callerRole domain.Role, callerID string, employee *domain.Employee) error {
 	if employee.ID == "" {
 		return domain.ErrBadRequest
 	}
 
 	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
-		if callerRole == domain.RoleStaff && callerID == employee.ID {
-			// Allow staff to update their own employee record
-		} else {
+		if !(callerRole == domain.RoleStaff && callerID == employee.ID) {
 			return domain.ErrForbidden
 		}
 	}
@@ -121,7 +120,7 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 	var existing *domain.Employee
 	var err error
 	if !employee.PhotoProvided || len(employee.Photo) == 0 {
-		existing, err = u.repo.FindByID(employee.ID)
+		existing, err = u.repo.FindByID(ctx, employee.ID)
 		if err != nil {
 			return err
 		}
@@ -129,7 +128,7 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 
 	if !employee.PhotoProvided {
 		if existing == nil {
-			existing, err = u.repo.FindByID(employee.ID)
+			existing, err = u.repo.FindByID(ctx, employee.ID)
 			if err != nil {
 				return err
 			}
@@ -150,7 +149,7 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 		employee.PasswordHash = string(passwordHash)
 	} else {
 		if existing == nil {
-			existing, err = u.repo.FindByID(employee.ID)
+			existing, err = u.repo.FindByID(ctx, employee.ID)
 			if err != nil {
 				return err
 			}
@@ -159,10 +158,10 @@ func (u *EmployeeUsecase) Update(callerRole domain.Role, callerID string, employ
 	}
 
 	employee.UpdatedAt = time.Now()
-	return u.repo.Update(employee)
+	return u.repo.Update(ctx, employee)
 }
 
-func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, id string, photo []byte, photoMIME string) error {
+func (u *EmployeeUsecase) UpdatePhoto(ctx context.Context, callerRole domain.Role, callerID string, id string, photo []byte, photoMIME string) error {
 	if !(callerRole == domain.RoleSupervisor || callerRole == domain.RoleManager || callerRole == domain.RoleHR) {
 		if !(callerRole == domain.RoleStaff && callerID == id) {
 			return domain.ErrForbidden
@@ -183,7 +182,7 @@ func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, i
 		return domain.ErrBadRequest
 	}
 
-	employee, err := u.repo.FindByID(id)
+	employee, err := u.repo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -196,10 +195,10 @@ func (u *EmployeeUsecase) UpdatePhoto(callerRole domain.Role, callerID string, i
 
 	employee.PhotoMIME = strings.ToLower(photoMIME)
 	employee.UpdatedAt = time.Now()
-	return u.repo.Update(employee)
+	return u.repo.Update(ctx, employee)
 }
 
-func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
+func (u *EmployeeUsecase) Delete(ctx context.Context, callerRole domain.Role, id string) error {
 	if !canManageAll(callerRole) {
 		return domain.ErrForbidden
 	}
@@ -207,5 +206,5 @@ func (u *EmployeeUsecase) Delete(callerRole domain.Role, id string) error {
 	if strings.TrimSpace(id) == "" {
 		return domain.ErrBadRequest
 	}
-	return u.repo.Delete(id)
+	return u.repo.Delete(ctx, id)
 }

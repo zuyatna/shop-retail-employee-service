@@ -23,8 +23,8 @@ func NewPostgresEmployeeRepo(pool *pgxpool.Pool, timeout time.Duration) *Postgre
 	}
 }
 
-func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) Create(ct context.Context, employee *domain.Employee) error {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `INSERT INTO employees (id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at, address, district, city, province, phone, photo, photo_mime)
@@ -51,8 +51,8 @@ func (r *PostgresEmployeeRepo) Create(employee *domain.Employee) error {
 	return nil
 }
 
-func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) FindByID(ct context.Context, id string) (*domain.Employee, error) {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at,
@@ -80,8 +80,8 @@ func (r *PostgresEmployeeRepo) FindByID(id string) (*domain.Employee, error) {
 	return employee, nil
 }
 
-func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) FindAll(ct context.Context) ([]*domain.Employee, error) {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `SELECT id, name, email, role, position, salary, status, created_at, updated_at, deleted_at,
@@ -118,8 +118,8 @@ func (r *PostgresEmployeeRepo) FindAll() ([]*domain.Employee, error) {
 	return employees, nil
 }
 
-func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) FindByEmail(ct context.Context, email string) (*domain.Employee, error) {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `SELECT id, name, email, password_hash, role, position, salary, status, created_at, updated_at, deleted_at,
@@ -147,8 +147,8 @@ func (r *PostgresEmployeeRepo) FindByEmail(email string) (*domain.Employee, erro
 	return employee, nil
 }
 
-func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) Update(ct context.Context, employee *domain.Employee) error {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `UPDATE employees
@@ -166,7 +166,7 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 	}
 
 	if cmd.RowsAffected() == 0 {
-		_, err := r.FindByID(employee.ID)
+		_, err := r.FindByID(ctx, employee.ID)
 		if err == domain.ErrDeleted {
 			return domain.ErrDeleted
 		}
@@ -175,8 +175,8 @@ func (r *PostgresEmployeeRepo) Update(employee *domain.Employee) error {
 	return nil
 }
 
-func (r *PostgresEmployeeRepo) Delete(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+func (r *PostgresEmployeeRepo) Delete(ct context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ct, r.timeout)
 	defer cancel()
 
 	query := `UPDATE employees
@@ -187,9 +187,9 @@ func (r *PostgresEmployeeRepo) Delete(id string) error {
 		log.Println("Error deleting employee:", err)
 		return err
 	}
-	
+
 	if cmd.RowsAffected() == 0 {
-		_, err := r.FindByID(id)
+		_, err := r.FindByID(ctx, id)
 		if err == domain.ErrDeleted {
 			return domain.ErrDeleted
 		}

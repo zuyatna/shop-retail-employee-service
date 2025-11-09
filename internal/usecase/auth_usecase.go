@@ -1,9 +1,10 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 
-	"github.com/zuyatna/shop-retail-employee-service/internal/model"
+	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,12 +23,12 @@ func NewAuthUsecase(repo domain.EmployeeRepository, signer TokenSigner) *AuthUse
 	return &AuthUsecase{repo: repo, signer: signer}
 }
 
-func (u *AuthUsecase) Login(email, password string) (string, *domain.Employee, error) {
+func (u *AuthUsecase) Login(ctx context.Context, email, password string) (string, *domain.Employee, error) {
 	if email == "" || password == "" {
 		return "", nil, domain.ErrBadRequest
 	}
 
-	employee, err := u.repo.FindByEmail(email)
+	employee, err := u.repo.FindByEmail(ctx, email)
 	if err != nil {
 		return "", nil, err
 	}

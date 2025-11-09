@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -44,12 +45,12 @@ type EmployeeResponse struct {
 }
 
 type EmployeeRepository interface {
-	Create(employee *Employee) error
-	FindByID(id string) (*Employee, error)
-	FindAll() ([]*Employee, error)
-	Update(employee *Employee) error
-	Delete(id string) error
-	FindByEmail(email string) (*Employee, error)
+	Create(ctx context.Context, employee *Employee) error
+	FindByID(ctx context.Context, id string) (*Employee, error)
+	FindAll(ctx context.Context) ([]*Employee, error)
+	Update(ctx context.Context, employee *Employee) error
+	Delete(ctx context.Context, id string) error
+	FindByEmail(ctx context.Context, email string) (*Employee, error)
 }
 
 var (

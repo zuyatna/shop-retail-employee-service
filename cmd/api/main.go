@@ -26,9 +26,16 @@ func main() {
 	}
 
 	ctx := context.Background()
-	cfg := config.Load()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL())
+	// database config
+	cfg, _ := pgxpool.ParseConfig(config.Load().DatabaseURL())
+	cfg.MaxConns = 50 // adjust based on application's needs
+	cfg.MinConns = 5
+	cfg.MaxConnLifetime = 30 * time.Minute
+	cfg.HealthCheckPeriod = 1 * time.Minute
+
+	// database connection
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
@@ -44,7 +51,7 @@ func main() {
 	pgRepo := repo.NewPostgresEmployeeRepo(pool, 5*time.Second)
 	uuidGen := idgen.NewUUIDv7Generator()
 	empUsecase := usecase.NewEmployeeUsecase(pgRepo, uuidGen)
-	signer := &jwtutil.Signer{Secret: []byte(cfg.JWTSecret), Issuer: cfg.JWTIssuer, TTL: time.Duration(cfg.JWTTTL) * time.Second}
+	signer := &jwtutil.Signer{Secret: []byte(config.Load().JWTSecret), Issuer: config.Load().JWTIssuer, TTL: time.Duration(config.Load().JWTTTL) * time.Second}
 	authUsecase := usecase.NewAuthUsecase(pgRepo, signer)
 
 	// handler
@@ -54,18 +61,21 @@ func main() {
 	// middleware
 	authMiddleware := httpAdapter.NewAuthMiddleware(signer)
 
-	mux := router.EmployeeRoutes(authHandler, empHandler, authMiddleware)
+	mux := router.EmployeeRoutes(ctx, authHandler, empHandler, authMiddleware)
 
 	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
+		Addr:              config.Load().HTTPAddr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {
-		log.Printf("Starting server on %s\n", cfg.HTTPAddr)
+		log.Printf("Starting server on %s\n", config.Load().HTTPAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Could not listen on %s: %v\n", cfg.HTTPAddr, err)
+			log.Fatalf("Could not listen on %s: %v\n", config.Load().HTTPAddr, err)
 		}
 	}()
 

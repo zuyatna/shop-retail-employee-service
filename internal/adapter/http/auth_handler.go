@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -26,14 +27,14 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
 		return
 	}
 
-	token, _, err := h.auth.Login(req.Email, req.Password)
+	token, _, err := h.auth.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrBadRequest):
