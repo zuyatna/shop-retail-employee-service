@@ -177,15 +177,23 @@ func (h *EmployeeHandler) GetPhoto(ctx context.Context, w http.ResponseWriter, r
 func (h *EmployeeHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
 	var req model.EmployeeRequest
+	var pwHash string
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
 		return
 	}
 
+	if req.Password == nil || strings.TrimSpace(*req.Password) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "password is required"})
+		return
+	} else {
+		pwHash = strings.TrimSpace(*req.Password)
+	}
+
 	employee := &domain.Employee{
 		Name:         req.Name,
 		Email:        req.Email,
-		PasswordHash: *req.Password,
+		PasswordHash: pwHash,
 		Role:         domain.Role(req.Role),
 		Position:     req.Position,
 		Salary:       req.Salary,
