@@ -1,4 +1,4 @@
-package domain
+package model
 
 import (
 	"context"
@@ -35,6 +35,23 @@ type Employee struct {
 	Photo         []byte     `json:"photo,omitempty"`
 	PhotoMIME     string     `json:"-"`
 	PhotoProvided bool       `json:"-"`
+}
+
+type EmployeeRequest struct {
+	Name      string  `json:"name"`
+	Email     string  `json:"email"`
+	Password  *string `json:"password,omitempty"`
+	Role      Role    `json:"role"`
+	Position  string  `json:"position"`
+	Salary    float64 `json:"salary"`
+	Status    string  `json:"status"`
+	Address   string  `json:"address"`
+	District  string  `json:"district"`
+	City      string  `json:"city"`
+	Province  string  `json:"province"`
+	Phone     string  `json:"phone"`
+	Photo     *string `json:"photo,omitempty"`
+	PhotoMIME string  `json:"photo_mime,omitempty"` // e.g., "image/jpeg"
 }
 
 type EmployeeResponse struct {

@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/zuyatna/shop-retail-employee-service/internal/model"
 	domain "github.com/zuyatna/shop-retail-employee-service/internal/model"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 )
@@ -127,12 +127,12 @@ func (h *EmployeeHandler) GetMe(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	employeeNew := *employee
-	employeeNew.PasswordHash = ""
-	employeeNew.CreatedAt = time.Time{}
-	employeeNew.UpdatedAt = time.Time{}
-	employeeNew.DeletedAt = nil
-	employeeNew.Photo = nil
+	employeeNew := model.EmployeeResponse{
+		ID:    employee.ID,
+		Name:  employee.Name,
+		Email: employee.Email,
+		Role:  employee.Role,
+	}
 
 	writeJSON(w, http.StatusOK, &employeeNew)
 }
@@ -174,25 +174,9 @@ func (h *EmployeeHandler) GetPhoto(ctx context.Context, w http.ResponseWriter, r
 	_, _ = w.Write(employee.Photo)
 }
 
-type createEmployeeRequest struct {
-	Name     string  `json:"name"`
-	Email    string  `json:"email"`
-	Password string  `json:"password"`
-	Role     string  `json:"role"`
-	Position string  `json:"position"`
-	Salary   float64 `json:"salary"`
-	Status   string  `json:"status"`
-	Address  string  `json:"address"`
-	District string  `json:"district"`
-	City     string  `json:"city"`
-	Province string  `json:"province"`
-	Phone    string  `json:"phone"`
-	Photo    string  `json:"photo"` // base64 encoded string
-}
-
 func (h *EmployeeHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	caller := getCallerRoleFromContext(r)
-	var req createEmployeeRequest
+	var req model.EmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
 		return
@@ -201,7 +185,7 @@ func (h *EmployeeHandler) Create(ctx context.Context, w http.ResponseWriter, r *
 	employee := &domain.Employee{
 		Name:         req.Name,
 		Email:        req.Email,
-		PasswordHash: req.Password,
+		PasswordHash: *req.Password,
 		Role:         domain.Role(req.Role),
 		Position:     req.Position,
 		Salary:       req.Salary,
@@ -219,22 +203,6 @@ func (h *EmployeeHandler) Create(ctx context.Context, w http.ResponseWriter, r *
 	}
 	log.Println("Employee created with ID:", employee.ID)
 	writeJSON(w, http.StatusCreated, map[string]string{"id": employee.ID})
-}
-
-type updateEmployeeRequest struct {
-	Name     string  `json:"name"`
-	Email    string  `json:"email"`
-	Password *string `json:"password"`
-	Role     string  `json:"role"`
-	Position string  `json:"position"`
-	Salary   float64 `json:"salary"`
-	Status   string  `json:"status"`
-	Address  string  `json:"address"`
-	District string  `json:"district"`
-	City     string  `json:"city"`
-	Province string  `json:"province"`
-	Phone    string  `json:"phone"`
-	Photo    *string `json:"photo"` // base64 encoded string
 }
 
 func (h *EmployeeHandler) PutPhotoMultipart(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -335,7 +303,7 @@ func (h *EmployeeHandler) Update(ctx context.Context, w http.ResponseWriter, r *
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
 
-	var req updateEmployeeRequest
+	var req model.EmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request payload"})
 		return
