@@ -292,7 +292,7 @@ func (h *EmployeeHandler) PutPhotoMultipart(ctx context.Context, w http.Response
 	writeJSON(w, http.StatusOK, map[string]string{"message": "employee photo updated"})
 }
 
-func (h EmployeeHandler) DeletePhoto(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *EmployeeHandler) DeletePhoto(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/employee/photo/")
 	callerRole := getCallerRoleFromContext(r)
 	callerID := getCallerIDFromContext(r)
