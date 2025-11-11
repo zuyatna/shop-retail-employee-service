@@ -273,7 +273,7 @@ func (h *EmployeeHandler) PutPhotoMultipart(ctx context.Context, w http.Response
 		}
 	case "image/png":
 		sig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
-		if !(len(data) >= 8 && string(data[:8]) == string(sig)) {
+		if !(len(data) >= 8 && bytes.Equal(data[:8], sig)) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid PNG image data signature"})
 			return
 		}
