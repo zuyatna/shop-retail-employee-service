@@ -2,6 +2,7 @@
 A replication of employee shop retail using Go
 
 # Project Structures
+```
 shop-retail-employee/
 ├── cmd/
 |   └── api/
@@ -36,6 +37,7 @@ shop-retail-employee/
 ├── go.mod
 ├── go.sum
 └── README.md
+```
 
 ### Docker Image
 ```
