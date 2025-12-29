@@ -7,10 +7,6 @@ CREATE TABLE IF NOT EXISTS employees (
     position TEXT NOT NULL,
     salary NUMERIC(15,2) NOT NULL DEFAULT 0,
     status TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    deleted_at TIMESTAMPTZ NULL,
-
     address  TEXT,
     district TEXT,
     city     TEXT,
@@ -20,6 +16,10 @@ CREATE TABLE IF NOT EXISTS employees (
     -- Foto & MIME
     photo BYTEA,
     photo_mime TEXT,
+
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    deleted_at TIMESTAMPTZ NULL,
 
     -- Constraint ukuran foto (max 5 MB)
     CONSTRAINT employees_photo_max_5mb
