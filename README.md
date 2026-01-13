@@ -75,6 +75,11 @@ app
 cmd
 ```
 
+### Data Workflow
+```
+Handler → Usecase → Domain(Entity + Interface) → Adapter(DB)
+```
+
 ### Simple Explanation
 ```
 | Folder         | Tanggung Jawab                |
