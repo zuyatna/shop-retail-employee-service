@@ -82,6 +82,74 @@ func (e *Employee) Activate() {
 	e.status = StatusActive
 }
 
+func (e *Employee) Suspend() {
+	e.status = StatusSuspended
+}
+
+func (e *Employee) Deactivate() {
+	e.status = StatusInactive
+}
+
+func (e *Employee) ChangeRole(newRole Role) error {
+	if !isValidRole(newRole) {
+		return errors.New("invalid role")
+	}
+	e.role = newRole
+	return nil
+}
+
+type UpdateProfileParams struct {
+	Position    string
+	Salary      int64
+	Address     string
+	City        string
+	Province    string
+	PhoneNumber string
+	PhotoURL    string
+	BirthDate   *time.Time
+}
+
+func (e *Employee) UpdateProfile(params UpdateProfileParams) error {
+	if params.Salary < 0 {
+		return errors.New("salary cannot be negative")
+	}
+
+	e.position = params.Position
+	e.salary = params.Salary
+	e.address = params.Address
+	e.city = params.City
+	e.province = params.Province
+	e.phoneNumber = params.PhoneNumber
+	e.photoURL = params.PhotoURL
+	e.birthdate = params.BirthDate
+
+	return nil
+}
+
+func (e *Employee) ID() EmployeeID {
+	return e.id
+}
+
+func (e *Employee) Name() string {
+	return e.name
+}
+
+func (e *Employee) Email() Email {
+	return e.email
+}
+
+func (e *Employee) Role() Role {
+	return e.role
+}
+
+func (e *Employee) Status() Status {
+	return e.status
+}
+
+func (e *Employee) Salary() int64 {
+	return e.salary
+}
+
 func isValidEmail(email string) bool {
 	return strings.Contains(email, "@")
 }
