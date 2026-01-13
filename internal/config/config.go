@@ -20,7 +20,7 @@ type Config struct {
 }
 
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		AppEnv:     getEnv("APP_ENV"),
 		HTTPAddr:   getEnv("HTTP_ADDR"),
 		DBHost:     getEnv("DB_HOST"),
@@ -33,6 +33,9 @@ func Load() *Config {
 		JWTIssuer:  getEnv("JWT_ISSUER"),
 		JWTTTL:     atoiMust(getEnv("JWT_TTL")),
 	}
+
+	cfg.validate()
+	return cfg
 }
 
 func (c *Config) DatabaseURL() string {
@@ -45,6 +48,12 @@ func (c *Config) DatabaseURL() string {
 		c.DBName,
 		c.DBSSLMode,
 	)
+}
+
+func (c *Config) validate() {
+	if c.JWTTTL <= 0 {
+		panic("JWT_TTL must be greater than zero")
+	}
 }
 
 func getEnv(key string) string {

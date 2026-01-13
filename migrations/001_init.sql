@@ -1,39 +1,34 @@
-CREATE TABLE IF NOT EXISTS employees (
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Employees table
+CREATE TABLE employees (
     id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('supervisor', 'hr', 'manager', 'staff')),
-    position TEXT NOT NULL,
-    salary NUMERIC(15,2) NOT NULL DEFAULT 0,
-    status TEXT NOT NULL,
-    address  TEXT,
-    district TEXT,
-    city     TEXT,
-    province TEXT,
-    phone    TEXT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    position VARCHAR(100),
+    salary NUMERIC(15,2),
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    birthdate DATE,
+    address TEXT,
+    city VARCHAR(100),
+    province VARCHAR(100),
+    phone_number VARCHAR(20) UNIQUE,
+    photo TEXT,
 
-    -- Foto & MIME
-    photo BYTEA,
-    photo_mime TEXT,
-
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    deleted_at TIMESTAMPTZ NULL,
-
-    -- Constraint ukuran foto (max 5 MB)
-    CONSTRAINT employees_photo_max_5mb
-      CHECK (photo IS NULL OR octet_length(photo) <= 5 * 1024 * 1024),
-
-    -- Whitelist MIME (jika ada photo, mime harus valid)
-    CONSTRAINT employees_photo_mime_whitelist
-      CHECK (
-        photo IS NULL
-        OR photo_mime IN ('image/jpeg','image/png')
-      )
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP
 );
 
--- Index tambahan
-CREATE INDEX IF NOT EXISTS idx_employees_email       ON employees(email);
-CREATE INDEX IF NOT EXISTS idx_employees_role        ON employees(role);
-CREATE INDEX IF NOT EXISTS idx_employees_deleted_at  ON employees(deleted_at);
+-- Status constraint
+ALTER TABLE employees
+ADD CONSTRAINT chk_employee_status
+CHECK (status IN ('active', 'inactive', 'suspended'));
+
+-- Indexes
+CREATE INDEX idx_employees_email ON employees(email);
+CREATE INDEX idx_employees_status ON employees(status);
+CREATE INDEX idx_employees_deleted_at ON employees(deleted_at);
