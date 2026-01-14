@@ -24,19 +24,20 @@ const (
 )
 
 type Employee struct {
-	id          EmployeeID
-	name        string
-	email       Email
-	role        Role
-	position    string
-	salary      int64
-	status      Status
-	birthdate   *time.Time
-	address     string
-	city        string
-	province    string
-	phoneNumber string
-	photoURL    string
+	id           EmployeeID
+	name         string
+	email        Email
+	passwordHash string
+	role         Role
+	position     string
+	salary       int64
+	status       Status
+	birthdate    *time.Time
+	address      string
+	city         string
+	province     string
+	phoneNumber  string
+	photo        string
 }
 
 func NewEmployee(
@@ -68,11 +69,12 @@ func NewEmployee(
 	}
 
 	employee := &Employee{
-		id:     id,
-		name:   name,
-		email:  email,
-		role:   role,
-		status: StatusActive,
+		id:           id,
+		name:         name,
+		email:        email,
+		passwordHash: hashedPassword,
+		role:         role,
+		status:       StatusActive,
 	}
 
 	return employee, nil
@@ -105,7 +107,7 @@ type UpdateProfileParams struct {
 	City        string
 	Province    string
 	PhoneNumber string
-	PhotoURL    string
+	Photo       string
 	BirthDate   *time.Time
 }
 
@@ -120,7 +122,7 @@ func (e *Employee) UpdateProfile(params UpdateProfileParams) error {
 	e.city = params.City
 	e.province = params.Province
 	e.phoneNumber = params.PhoneNumber
-	e.photoURL = params.PhotoURL
+	e.photo = params.Photo
 	e.birthdate = params.BirthDate
 
 	return nil
@@ -138,6 +140,10 @@ func (e *Employee) Email() Email {
 	return e.email
 }
 
+func (e *Employee) PasswordHash() string {
+	return e.passwordHash
+}
+
 func (e *Employee) Role() Role {
 	return e.role
 }
@@ -148,6 +154,34 @@ func (e *Employee) Status() Status {
 
 func (e *Employee) Salary() int64 {
 	return e.salary
+}
+
+func (e *Employee) Position() string {
+	return e.position
+}
+
+func (e *Employee) BirthDate() *time.Time {
+	return e.birthdate
+}
+
+func (e *Employee) Address() string {
+	return e.address
+}
+
+func (e *Employee) City() string {
+	return e.city
+}
+
+func (e *Employee) Province() string {
+	return e.province
+}
+
+func (e *Employee) PhoneNumber() string {
+	return e.phoneNumber
+}
+
+func (e *Employee) Photo() string {
+	return e.photo
 }
 
 func isValidEmail(email string) bool {
@@ -161,4 +195,40 @@ func isValidRole(role Role) bool {
 	default:
 		return false
 	}
+}
+
+type ReconstituteEmployeeParams struct {
+	ID           string
+	Name         string
+	Email        string
+	PasswordHash string
+	Role         string
+	Position     string
+	Salary       int64
+	Status       string
+	BirthDate    *time.Time
+	Address      string
+	City         string
+	Province     string
+	PhoneNumber  string
+	Photo        string
+}
+
+func ReconstituteEmployee(p ReconstituteEmployeeParams) (*Employee, error) {
+	return &Employee{
+		id:           EmployeeID(p.ID),
+		name:         p.Name,
+		email:        Email(p.Email),
+		passwordHash: p.PasswordHash,
+		role:         Role(p.Role),
+		position:     p.Position,
+		salary:       p.Salary,
+		status:       Status(p.Status),
+		birthdate:    p.BirthDate,
+		address:      p.Address,
+		city:         p.City,
+		province:     p.Province,
+		phoneNumber:  p.PhoneNumber,
+		photo:        p.Photo,
+	}, nil
 }
