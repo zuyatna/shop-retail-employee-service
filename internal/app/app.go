@@ -10,7 +10,7 @@ import (
 
 type App struct {
 	Pool   *pgxpool.Pool
-	Router http.Handler // nanti diisi di app/http.go
+	Router http.Handler
 }
 
 func New(cfg *config.Config) (*App, error) {

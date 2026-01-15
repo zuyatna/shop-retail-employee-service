@@ -57,8 +57,8 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 		return "", fmt.Errorf("invalid birth date format: %w", err)
 	}
 
-	// Create domain employee
-	employee, err := domain.NewEmployee(domain.NewEmployeeParams{
+	// Create domain newEmployee
+	newEmployee, err := domain.NewEmployee(domain.NewEmployeeParams{
 		ID:             domain.EmployeeID(id),
 		Name:           req.Name,
 		Email:          domain.Email(req.Email),
@@ -73,11 +73,11 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 		PhoneNumber:    req.PhoneNumber,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create employee domain: %w", err)
+		return "", fmt.Errorf("failed to create newEmployee domain: %w", err)
 	}
 
-	if err := uc.repo.Save(ctx, employee); err != nil {
-		return "", fmt.Errorf("failed to save employee: %w", err)
+	if err := uc.repo.Save(ctx, newEmployee); err != nil {
+		return "", fmt.Errorf("failed to save newEmployee: %w", err)
 	}
 
 	return id, nil
@@ -88,80 +88,80 @@ func (uc *EmployeeUsecase) GetByID(ctx context.Context, id string) (*domain.Empl
 	defer cancel()
 
 	if id == "" {
-		return nil, fmt.Errorf("employee ID cannot be empty")
+		return nil, fmt.Errorf("findByID ID cannot be empty")
 	}
 
-	employee, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get employee by ID: %w", err)
+		return nil, fmt.Errorf("failed to get findByID by ID: %w", err)
 	}
 
-	if employee == nil {
+	if findByID == nil {
 		return nil, fmt.Errorf(EmployeeNotFoundError)
 	}
 
-	return employee, nil
+	return findByID, nil
 }
 
 func (uc *EmployeeUsecase) GetByEmail(ctx context.Context, email string) (*domain.Employee, error) {
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	employee, err := uc.repo.FindByEmail(ctx, email)
+	findByEmail, err := uc.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get employee by email: %w", err)
+		return nil, fmt.Errorf("failed to get findByEmail by email: %w", err)
 	}
 
-	if employee == nil {
+	if findByEmail == nil {
 		return nil, fmt.Errorf(EmployeeNotFoundError)
 	}
 
-	return employee, nil
+	return findByEmail, nil
 }
 
 func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req employee.UpdateEmployeeRequest) error {
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	employee, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
 	if err != nil {
-		return fmt.Errorf("failed to find employee: %w", err)
+		return fmt.Errorf("failed to find findByID: %w", err)
 	}
 
 	if req.Name != nil {
-		employee.SetName(*req.Name)
+		findByID.SetName(*req.Name)
 	}
 
 	if req.Position != nil {
-		employee.SetPosition(*req.Position)
+		findByID.SetPosition(*req.Position)
 	}
 
 	if req.Salary != nil {
-		employee.SetSalary(int64(*req.Salary))
+		findByID.SetSalary(int64(*req.Salary))
 	}
 
 	if req.Address != nil {
-		employee.SetAddress(*req.Address)
+		findByID.SetAddress(*req.Address)
 	}
 
 	if req.City != nil {
-		employee.SetCity(*req.City)
+		findByID.SetCity(*req.City)
 	}
 
 	if req.Province != nil {
-		employee.SetProvince(*req.Province)
+		findByID.SetProvince(*req.Province)
 	}
 
 	if req.PhoneNumber != nil {
-		employee.SetPhoneNumber(*req.PhoneNumber)
+		findByID.SetPhoneNumber(*req.PhoneNumber)
 	}
 
 	if req.Photo != nil {
-		employee.SetPhoto(*req.Photo)
+		findByID.SetPhoto(*req.Photo)
 	}
 
-	if err := uc.repo.Update(ctx, employee); err != nil {
-		return fmt.Errorf("failed to update employee in repo: %w", err)
+	if err := uc.repo.Update(ctx, findByID); err != nil {
+		return fmt.Errorf("failed to update findByID in repo: %w", err)
 	}
 
 	return nil
@@ -171,19 +171,19 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	employee, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
 	if err != nil {
-		return fmt.Errorf("failed to find employee: %w", err)
+		return fmt.Errorf("failed to find findByID: %w", err)
 	}
 
-	if employee == nil {
+	if findByID == nil {
 		return fmt.Errorf(EmployeeNotFoundError)
 	}
 
-	employee.Delete()
+	findByID.Delete()
 
-	if err := uc.repo.Update(ctx, employee); err != nil {
-		return fmt.Errorf("failed to soft delete employee: %w", err)
+	if err := uc.repo.Update(ctx, findByID); err != nil {
+		return fmt.Errorf("failed to soft delete findByID: %w", err)
 	}
 
 	return nil
