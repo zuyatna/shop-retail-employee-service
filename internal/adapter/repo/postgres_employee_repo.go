@@ -37,19 +37,8 @@ func (r *PostgresEmployeeRepo) Save(ctx context.Context, employee *domain.Employ
 	`
 
 	_, err := r.pool.Exec(ctx, query,
-		rec.ID,
-		rec.Name,
-		rec.Email,
-		rec.Password,
-		rec.Role,
-		rec.Position,
-		rec.Salary,
-		rec.Status,
-		rec.BirthDate,
-		rec.Address,
-		rec.City,
-		rec.Province,
-		rec.PhoneNumber,
+		rec.ID, rec.Name, rec.Email, rec.Password, rec.Role, rec.Position, rec.Salary, rec.Status,
+		rec.BirthDate, rec.Address, rec.City, rec.Province, rec.PhoneNumber,
 	)
 
 	return err
@@ -105,25 +94,18 @@ func (r *PostgresEmployeeRepo) Update(ctx context.Context, employee *domain.Empl
 	rec := record.FromDomain(employee)
 
 	query := `
-		UPDATE employees SET
-			name = $1,
-			role = $2,
-			position = $3,
-			salary = $4,
-			status = $5,
-			birthdate = $6,
-			address = $7,
-			city = $8,
-			province = $9,
-			phone_number = $10,
-			photo = $11,
-			updated_at = NOW()
+		UPDATE employees
+		SET name = $1, role = $2, position = $3, salary = $4, status = $5,
+		    birthdate = $6, address = $7, city = $8, province = $9,
+		    phone_number = $10, photo = $11,
+		    updated_at = NOW()
 		WHERE id = $12 AND deleted_at IS NULL
 	`
 
 	cmdTag, err := r.pool.Exec(ctx, query,
 		rec.Name, rec.Role, rec.Position, rec.Salary, rec.Status,
-		rec.BirthDate, rec.Address, rec.City, rec.Province, rec.PhoneNumber, rec.Photo,
+		rec.BirthDate, rec.Address, rec.City, rec.Province,
+		rec.PhoneNumber, rec.Photo,
 		rec.ID,
 	)
 
