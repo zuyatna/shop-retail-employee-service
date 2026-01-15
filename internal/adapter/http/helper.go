@@ -14,19 +14,25 @@ type Response struct {
 func WriteJSON(w http.ResponseWriter, status int, data any, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(Response{
+	err := json.NewEncoder(w).Encode(Response{
 		Success: true,
 		Message: msg,
 		Data:    data,
 	})
+	if err != nil {
+		return
+	}
 }
 
-func WriteErrorJSON(w http.ResponseWriter, status int, err error, msg string) {
+func WriteErrorJSON(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(Response{
+	err := json.NewEncoder(w).Encode(Response{
 		Success: false,
 		Message: msg,
 		Data:    nil,
 	})
+	if err != nil {
+		return
+	}
 }
