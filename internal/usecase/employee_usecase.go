@@ -34,7 +34,9 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 
 	existing, err := uc.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return "", fmt.Errorf("failed to check email: %w", err)
+		if err.Error() != EmployeeNotFoundError {
+			return "", fmt.Errorf("failed to check existing email: %w", err)
+		}
 	}
 	if existing != nil {
 		return "", fmt.Errorf("email already exists")
