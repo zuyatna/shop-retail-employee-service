@@ -40,41 +40,61 @@ type Employee struct {
 	photo        string
 }
 
-func NewEmployee(
-	id EmployeeID,
-	name string,
-	email Email,
-	hashedPassword string,
-	role Role,
-) (*Employee, error) {
+type NewEmployeeParams struct {
+	ID             EmployeeID
+	Name           string
+	Email          Email
+	HashedPassword string
+	Role           Role
+	Position       string
+	Salary         int64
+	BirthDate      *time.Time
+	Address        string
+	City           string
+	Province       string
+	PhoneNumber    string
+}
 
-	if id == "" {
+func NewEmployee(params NewEmployeeParams) (*Employee, error) {
+
+	if params.ID == "" {
 		return nil, errors.New("employee ID cannot be empty")
 	}
 
-	if strings.TrimSpace(name) == "" {
+	if strings.TrimSpace(params.Name) == "" {
 		return nil, errors.New("employee name cannot be empty")
 	}
 
-	if !isValidEmail(string(email)) {
+	if !isValidEmail(string(params.Email)) {
 		return nil, errors.New("invalid email format")
 	}
 
-	if hashedPassword == "" {
+	if params.HashedPassword == "" {
 		return nil, errors.New("password cannot be empty")
 	}
 
-	if !isValidRole(role) {
+	if !isValidRole(params.Role) {
 		return nil, errors.New("invalid role")
 	}
 
+	if params.Salary < 0 {
+		return nil, errors.New("salary cannot be negative")
+	}
+
 	employee := &Employee{
-		id:           id,
-		name:         name,
-		email:        email,
-		passwordHash: hashedPassword,
-		role:         role,
+		id:           params.ID,
+		name:         params.Name,
+		email:        params.Email,
+		passwordHash: params.HashedPassword,
+		role:         params.Role,
 		status:       StatusActive,
+		position:     params.Position,
+		salary:       params.Salary,
+		birthdate:    params.BirthDate,
+		address:      params.Address,
+		city:         params.City,
+		province:     params.Province,
+		phoneNumber:  params.PhoneNumber,
 	}
 
 	return employee, nil
