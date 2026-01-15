@@ -27,7 +27,7 @@ func (r *PostgresEmployeeRepo) Save(ctx context.Context, employee *domain.Employ
 	query := `
 		INSERT INTO employees (
 			id, name, email, password, role, position, salary, status,
-			birth_date, address, city, province, phone_number,
+			birthdate, address, city, province, phone_number,
 			created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8,
@@ -58,7 +58,7 @@ func (r *PostgresEmployeeRepo) Save(ctx context.Context, employee *domain.Employ
 func (r *PostgresEmployeeRepo) FindByID(ctx context.Context, id domain.EmployeeID) (*domain.Employee, error) {
 	query := `
 		SELECT id, name, email, password, role, position, salary, status,
-		       birth_date, address, city, province, phone_number, photo,
+		       birthdate, address, city, province, phone_number, photo,
 		       created_at, updated_at, deleted_at
 		FROM employees
 		WHERE id = $1 AND deleted_at IS NULL
@@ -81,7 +81,7 @@ func (r *PostgresEmployeeRepo) FindByID(ctx context.Context, id domain.EmployeeI
 func (r *PostgresEmployeeRepo) FindByEmail(ctx context.Context, email string) (*domain.Employee, error) {
 	query := `
 		SELECT id, name, email, password, role, position, salary, status,
-		       birth_date, address, city, province, phone_number, photo,
+		       birthdate, address, city, province, phone_number, photo,
 		       created_at, updated_at, deleted_at
 		FROM employees
 		WHERE email = $1 AND deleted_at IS NULL

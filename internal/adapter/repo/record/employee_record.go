@@ -16,7 +16,7 @@ type EmployeeRecord struct {
 	Position    sql.NullString `db:"position"`
 	Salary      sql.NullInt64  `db:"salary"`
 	Status      string         `db:"status"`
-	BirthDate   sql.NullTime   `db:"birth_date"`
+	BirthDate   sql.NullTime   `db:"birthdate"`
 	Address     sql.NullString `db:"address"`
 	City        sql.NullString `db:"city"`
 	Province    sql.NullString `db:"province"`
