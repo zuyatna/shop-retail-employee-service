@@ -217,6 +217,22 @@ func isValidRole(role Role) bool {
 	}
 }
 
+func (e *Employee) SetName(name string) {
+	e.name = name
+}
+
+func (e *Employee) SetPosition(position string) {
+	e.position = position
+}
+
+func (e *Employee) SetSalary(salary int64) {
+	e.salary = salary
+}
+
+func (e *Employee) Delete() {
+	e.status = StatusInactive
+}
+
 type ReconstituteEmployeeParams struct {
 	ID           string
 	Name         string
