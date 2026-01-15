@@ -229,6 +229,26 @@ func (e *Employee) SetSalary(salary int64) {
 	e.salary = salary
 }
 
+func (e *Employee) SetAddress(address string) {
+	e.address = address
+}
+
+func (e *Employee) SetCity(city string) {
+	e.city = city
+}
+
+func (e *Employee) SetProvince(province string) {
+	e.province = province
+}
+
+func (e *Employee) SetPhoneNumber(phoneNumber string) {
+	e.phoneNumber = phoneNumber
+}
+
+func (e *Employee) SetPhoto(photo string) {
+	e.photo = photo
+}
+
 func (e *Employee) Delete() {
 	e.status = StatusInactive
 }

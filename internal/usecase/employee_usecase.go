@@ -138,17 +138,24 @@ func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req emp
 		employee.SetSalary(int64(*req.Salary))
 	}
 
-	if err := employee.UpdateProfile(domain.UpdateProfileParams{
-		Position:    *req.Position,
-		Salary:      int64(*req.Salary),
-		Address:     *req.Address,
-		City:        *req.City,
-		Province:    *req.Province,
-		PhoneNumber: *req.PhoneNumber,
-		Photo:       *req.Photo,
-		BirthDate:   nil,
-	}); err != nil {
-		return fmt.Errorf("failed to update profile: %w", err)
+	if req.Address != nil {
+		employee.SetAddress(*req.Address)
+	}
+
+	if req.City != nil {
+		employee.SetCity(*req.City)
+	}
+
+	if req.Province != nil {
+		employee.SetProvince(*req.Province)
+	}
+
+	if req.PhoneNumber != nil {
+		employee.SetPhoneNumber(*req.PhoneNumber)
+	}
+
+	if req.Photo != nil {
+		employee.SetPhoto(*req.Photo)
 	}
 
 	if err := uc.repo.Update(ctx, employee); err != nil {
