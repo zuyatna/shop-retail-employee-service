@@ -19,8 +19,11 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
+	handler := NewHandler(pool, cfg)
+
 	app := &App{
-		Pool: pool,
+		Pool:   pool,
+		Router: handler,
 	}
 
 	return app, nil

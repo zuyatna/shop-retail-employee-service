@@ -1,0 +1,127 @@
+package adapterhttp
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/zuyatna/shop-retail-employee-service/internal/dto/employee"
+	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
+)
+
+type EmployeeHandler struct {
+	usecase *usecase.EmployeeUsecase
+}
+
+func NewEmployeeHandler(uc *usecase.EmployeeUsecase) *EmployeeHandler {
+	return &EmployeeHandler{
+		usecase: uc,
+	}
+}
+
+func (h *EmployeeHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req employee.CreateEmployeeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteErrorJSON(w, http.StatusBadRequest, err, "invalid request payload")
+		return
+	}
+
+	ctx := r.Context()
+
+	id, err := h.usecase.Register(ctx, req)
+	if err != nil {
+		WriteErrorJSON(w, http.StatusInternalServerError, err, err.Error())
+		return
+	}
+
+	WriteJSON(w, http.StatusCreated, map[string]string{"id": id}, "employee registered successfully")
+}
+
+func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	// Assume we get the ID from the URL path, e.g., /employees/{id}
+	id := r.URL.Path[len("/employees/"):]
+
+	ctx := r.Context()
+
+	employee, err := h.usecase.GetByID(ctx, id)
+	if err != nil {
+		if err.Error() == usecase.EmployeeNotFoundError {
+			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			return
+		}
+
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employee")
+		return
+	}
+
+	// Convert domain entity to response DTO
+	resp := usecase.FromDomain(employee)
+	WriteJSON(w, http.StatusOK, resp, "employee retrieved successfully")
+}
+
+func (h *EmployeeHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
+	email := r.URL.Query().Get("email")
+
+	ctx := r.Context()
+
+	employee, err := h.usecase.GetByEmail(ctx, email)
+	if err != nil {
+		if err.Error() == usecase.EmployeeNotFoundError {
+			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			return
+		}
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employee")
+		return
+	}
+
+	// Convert domain entity to response DTO
+	resp := usecase.FromDomain(employee)
+	WriteJSON(w, http.StatusOK, resp, "employee retrieved successfully")
+}
+
+func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
+	// Assume we get the ID from the URL path, e.g., /employees/{id}
+	id := r.URL.Path[len("/employees/"):]
+	if id == "" {
+		WriteErrorJSON(w, http.StatusBadRequest, nil, "employee ID is required")
+		return
+	}
+
+	var req employee.UpdateEmployeeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteErrorJSON(w, http.StatusBadRequest, err, "invalid request payload")
+		return
+	}
+
+	ctx := r.Context()
+
+	err := h.usecase.UpdateProfile(ctx, id, req)
+	if err != nil {
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to update employee")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, nil, "employee updated successfully")
+}
+
+func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	// Assume we get the ID from the URL path, e.g., /employees/{id}
+	id := r.URL.Path[len("/employees/"):]
+	if id == "" {
+		WriteErrorJSON(w, http.StatusBadRequest, nil, "employee ID is required")
+		return
+	}
+
+	ctx := r.Context()
+
+	err := h.usecase.Delete(ctx, id)
+	if err != nil {
+		if err.Error() == usecase.EmployeeNotFoundError {
+			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			return
+		}
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to delete employee")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, nil, "employee deleted successfully")
+}
