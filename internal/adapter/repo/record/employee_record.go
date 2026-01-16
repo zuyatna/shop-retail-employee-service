@@ -80,10 +80,6 @@ func toNullString(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: s != ""}
 }
 
-func toNullInt64(i int64) sql.NullInt64 {
-	return sql.NullInt64{Int64: i, Valid: i != 0}
-}
-
 func int64ToNumeric(v int64) pgtype.Numeric {
 	n := pgtype.Numeric{}
 	// Represent as an integer numeric (scale 0\)
