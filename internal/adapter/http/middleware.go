@@ -40,3 +40,30 @@ func AuthMiddleware(signer *jwtutil.Signer) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, ok := r.Context().Value(UserClaimsKey).(*jwtutil.Claims)
+			if !ok || claims == nil {
+				WriteErrorJSON(w, http.StatusUnauthorized, errors.New("unauthorized"), "user claims not found")
+				return
+			}
+
+			isAllowed := false
+			for _, role := range allowedRoles {
+				if role == claims.Role {
+					isAllowed = true
+					break
+				}
+			}
+
+			if !isAllowed {
+				WriteErrorJSON(w, http.StatusForbidden, errors.New("forbidden"), "access denied: insufficient permissions")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

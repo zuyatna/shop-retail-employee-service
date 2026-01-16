@@ -8,6 +8,7 @@ import (
 	adapterhttp "github.com/zuyatna/shop-retail-employee-service/internal/adapter/http"
 	"github.com/zuyatna/shop-retail-employee-service/internal/adapter/repo"
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
+	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/idgen"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
@@ -33,14 +34,18 @@ func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 
 	authMiddleware := adapterhttp.AuthMiddleware(jwtSigner)
 
+	requirePrivileged := adapterhttp.RoleMiddleware(string(domain.RoleAdmin), string(domain.RoleSupervisor))
+	requireAllRoles := adapterhttp.RoleMiddleware(string(domain.RoleAdmin), string(domain.RoleSupervisor), string(domain.RoleStaff))
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
-	mux.HandleFunc("POST /employees", authMiddleware(http.HandlerFunc(employeeHandler.Register)).ServeHTTP)
-	mux.HandleFunc("GET /employees/{id}", authMiddleware(http.HandlerFunc(employeeHandler.GetByID)).ServeHTTP)
-	mux.HandleFunc("PATCH /employees/{id}", authMiddleware(http.HandlerFunc(employeeHandler.Update)).ServeHTTP)
-	mux.HandleFunc("DELETE /employees/{id}", authMiddleware(http.HandlerFunc(employeeHandler.Delete)).ServeHTTP)
+	mux.HandleFunc("GET /employees/me", authMiddleware(requireAllRoles(http.HandlerFunc(employeeHandler.GetMe))).ServeHTTP)
+	mux.HandleFunc("POST /employees", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Register))).ServeHTTP)
+	mux.HandleFunc("GET /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetByID))).ServeHTTP)
+	mux.HandleFunc("PATCH /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Update))).ServeHTTP)
+	mux.HandleFunc("DELETE /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Delete))).ServeHTTP)
 
 	return mux
 }

@@ -2,10 +2,13 @@ package adapterhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/dto/employee"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
+	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
 )
 
 type EmployeeHandler struct {
@@ -16,6 +19,31 @@ func NewEmployeeHandler(uc *usecase.EmployeeUsecase) *EmployeeHandler {
 	return &EmployeeHandler{
 		usecase: uc,
 	}
+}
+
+func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(UserClaimsKey).(*jwtutil.Claims)
+	if !ok || claims == nil {
+		WriteErrorJSON(w, http.StatusUnauthorized, nil, "failed to get user context")
+		return
+	}
+
+	ctx := r.Context()
+
+	getByID, err := h.usecase.GetByID(ctx, claims.UserID)
+	if err != nil {
+		if err.Error() == usecase.EmployeeNotFoundError {
+			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			return
+		}
+
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employee")
+		return
+	}
+
+	// Convert domain entity to response DTO
+	resp := usecase.FromDomain(getByID)
+	WriteJSON(w, http.StatusOK, resp, "employee retrieved successfully")
 }
 
 func (h *EmployeeHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +112,14 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		WriteErrorJSON(w, http.StatusBadRequest, nil, "employee ID is required")
 		return
+	}
+
+	claims, ok := r.Context().Value(UserClaimsKey).(*jwtutil.Claims)
+	if ok && claims.Role == string(domain.RoleStaff) {
+		if claims.UserID != id {
+			WriteErrorJSON(w, http.StatusForbidden, errors.New("forbidden"), "you can only update your own profile")
+			return
+		}
 	}
 
 	var req employee.UpdateEmployeeRequest
