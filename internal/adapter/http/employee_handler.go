@@ -42,20 +42,20 @@ func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	employee, err := h.usecase.GetByID(ctx, id)
+	getByID, err := h.usecase.GetByID(ctx, id)
 	if err != nil {
 		if err.Error() == usecase.EmployeeNotFoundError {
-			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			WriteErrorJSON(w, http.StatusNotFound, err, "getByID not found")
 			return
 		}
 
-		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employee")
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve getByID")
 		return
 	}
 
 	// Convert domain entity to response DTO
-	resp := usecase.FromDomain(employee)
-	WriteJSON(w, http.StatusOK, resp, "employee retrieved successfully")
+	resp := usecase.FromDomain(getByID)
+	WriteJSON(w, http.StatusOK, resp, "getByID retrieved successfully")
 }
 
 func (h *EmployeeHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
@@ -63,19 +63,19 @@ func (h *EmployeeHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	employee, err := h.usecase.GetByEmail(ctx, email)
+	getByEmail, err := h.usecase.GetByEmail(ctx, email)
 	if err != nil {
 		if err.Error() == usecase.EmployeeNotFoundError {
-			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
+			WriteErrorJSON(w, http.StatusNotFound, err, "getByEmail not found")
 			return
 		}
-		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employee")
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve getByEmail")
 		return
 	}
 
 	// Convert domain entity to response DTO
-	resp := usecase.FromDomain(employee)
-	WriteJSON(w, http.StatusOK, resp, "employee retrieved successfully")
+	resp := usecase.FromDomain(getByEmail)
+	WriteJSON(w, http.StatusOK, resp, "getByEmail retrieved successfully")
 }
 
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {

@@ -2,6 +2,7 @@ package adapterhttp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -17,20 +18,20 @@ func AuthMiddleware(signer *jwtutil.Signer) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				WriteErrorJSON(w, http.StatusUnauthorized, "missing authorization header")
+				WriteErrorJSON(w, http.StatusUnauthorized, errors.New("missing authorization header"), "missing authorization header")
 				return
 			}
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				WriteErrorJSON(w, http.StatusUnauthorized, "invalid authorization header format")
+				WriteErrorJSON(w, http.StatusUnauthorized, errors.New("invalid authorization header format"), "invalid authorization header format")
 				return
 			}
 
 			tokenStr := parts[1]
 			claims, err := signer.Parse(tokenStr)
 			if err != nil {
-				WriteErrorJSON(w, http.StatusUnauthorized, "invalid or expired token")
+				WriteErrorJSON(w, http.StatusUnauthorized, err, "invalid or expired token")
 				return
 			}
 

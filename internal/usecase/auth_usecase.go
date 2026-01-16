@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
@@ -38,6 +39,7 @@ func (uc *AuthUsecase) Login(ctx context.Context, email, password string) (strin
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash()), []byte(password))
 	if err != nil {
+		log.Printf("password mismatch for email=%s: %v", email, err)
 		return "", fmt.Errorf("invalid email or password")
 	}
 

@@ -2,6 +2,7 @@ package adapterhttp
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/dto/auth"
@@ -21,13 +22,14 @@ func NewAuthHandler(uc *usecase.AuthUsecase) *AuthHandler {
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req auth.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteErrorJSON(w, http.StatusBadRequest, "invalid request payload")
+		WriteErrorJSON(w, http.StatusBadRequest, err, "invalid request payload")
 		return
 	}
 
 	token, err := h.usecase.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
-		WriteErrorJSON(w, http.StatusUnauthorized, err.Error())
+		log.Printf("login failed for email=%s: %v", req.Email, err)
+		WriteErrorJSON(w, http.StatusUnauthorized, err, "invalid email or password")
 		return
 	}
 

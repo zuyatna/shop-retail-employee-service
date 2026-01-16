@@ -19,7 +19,7 @@ func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	jwtSigner := &jwtutil.Signer{
 		Secret: []byte(cfg.JWTSecret),
 		Issuer: cfg.JWTIssuer,
-		TTL:    time.Duration(cfg.JWTTTL),
+		TTL:    time.Duration(cfg.JWTTTL) * time.Second,
 	}
 
 	employeeRepo := repo.NewPostgresEmployeeRepo(pool)

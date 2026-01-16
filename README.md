@@ -132,8 +132,8 @@ Note: You should update the supervisor account password after migration!
 
 ```
 02_seed_supervisor
-email: supervisor@shop.local
-password: admin
+"email": "supervisor@shop-retail.local",
+"password": "admin"
 ```
 
 Insert file into database

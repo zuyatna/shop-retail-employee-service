@@ -6,7 +6,7 @@ type CreateEmployeeRequest struct {
 	Password    string `json:"password" validate:"required,min=8"`
 	Role        string `json:"role" validate:"required,oneof=admin staff manager"`
 	Position    string `json:"position" validate:"required"`
-	Salary      int    `json:"salary" validate:"required,gt=0"`
+	Salary      int64  `json:"salary" validate:"required,gt=0"`
 	Status      string `json:"status" validate:"required,oneof=active inactive"`
 	BirthDate   string `json:"birth_date" validate:"required,datetime=2006-01-02"`
 	Address     string `json:"address" validate:"required"`

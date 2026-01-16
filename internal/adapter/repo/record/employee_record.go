@@ -2,8 +2,11 @@ package record
 
 import (
 	"database/sql"
+	"fmt"
+	"math/big"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 )
 
@@ -14,7 +17,7 @@ type EmployeeRecord struct {
 	Password    string         `db:"password"`
 	Role        string         `db:"role"`
 	Position    sql.NullString `db:"position"`
-	Salary      sql.NullInt64  `db:"salary"`
+	Salary      pgtype.Numeric `db:"salary"`
 	Status      string         `db:"status"`
 	BirthDate   sql.NullTime   `db:"birthdate"`
 	Address     sql.NullString `db:"address"`
@@ -37,7 +40,7 @@ func FromDomain(e *domain.Employee) *EmployeeRecord {
 		Password:    e.PasswordHash(),
 		Role:        string(e.Role()),
 		Position:    toNullString(e.Position()),
-		Salary:      toNullInt64(e.Salary()),
+		Salary:      int64ToNumeric(e.Salary()),
 		Status:      string(e.Status()),
 		BirthDate:   toNullTime(e.BirthDate()),
 		Address:     toNullString(e.Address()),
@@ -50,6 +53,11 @@ func FromDomain(e *domain.Employee) *EmployeeRecord {
 
 // ToDomain converts an EmployeeRecord to domain.Employee.
 func (r *EmployeeRecord) ToDomain() (*domain.Employee, error) {
+	salary, err := numericToInt64(r.Salary)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert salary: %w", err)
+	}
+
 	return domain.ReconstituteEmployee(domain.ReconstituteEmployeeParams{
 		ID:           r.ID,
 		Name:         r.Name,
@@ -57,7 +65,7 @@ func (r *EmployeeRecord) ToDomain() (*domain.Employee, error) {
 		PasswordHash: r.Password,
 		Role:         r.Role,
 		Position:     r.Position.String,
-		Salary:       r.Salary.Int64,
+		Salary:       salary,
 		Status:       r.Status,
 		BirthDate:    validTimeOrNil(r.BirthDate),
 		Address:      r.Address.String,
@@ -74,6 +82,37 @@ func toNullString(s string) sql.NullString {
 
 func toNullInt64(i int64) sql.NullInt64 {
 	return sql.NullInt64{Int64: i, Valid: i != 0}
+}
+
+func int64ToNumeric(v int64) pgtype.Numeric {
+	n := pgtype.Numeric{}
+	// Represent as an integer numeric (scale 0\)
+	n.Int = big.NewInt(v)
+	n.Exp = 0
+	n.Valid = true
+	return n
+}
+
+func numericToInt64(n pgtype.Numeric) (int64, error) {
+	if !n.Valid {
+		return 0, nil
+	}
+	if n.Int == nil {
+		return 0, fmt.Errorf("numeric has nil Int")
+	}
+	// If salary stored with decimals, this will truncate by shifting according to Exp
+	x := new(big.Int).Set(n.Int)
+	if n.Exp < 0 {
+		den := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(-n.Exp)), nil)
+		x.Quo(x, den)
+	} else if n.Exp > 0 {
+		mul := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(n.Exp)), nil)
+		x.Mul(x, mul)
+	}
+	if !x.IsInt64() {
+		return 0, fmt.Errorf("numeric out of int64 range")
+	}
+	return x.Int64(), nil
 }
 
 func toNullTime(t *time.Time) sql.NullTime {
