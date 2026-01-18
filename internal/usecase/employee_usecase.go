@@ -65,7 +65,7 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 		HashedPassword: string(hashedBytes),
 		Role:           domain.Role(req.Role),
 		Position:       req.Position,
-		Salary:         int64(req.Salary),
+		Salary:         req.Salary,
 		BirthDate:      birthDate,
 		Address:        req.Address,
 		City:           req.City,
@@ -117,6 +117,18 @@ func (uc *EmployeeUsecase) GetByEmail(ctx context.Context, email string) (*domai
 	}
 
 	return findByEmail, nil
+}
+
+func (uc *EmployeeUsecase) GetAll(ctx context.Context) ([]*domain.Employee, error) {
+	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
+	defer cancel()
+
+	employees, err := uc.repo.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all employees: %w", err)
+	}
+
+	return employees, nil
 }
 
 func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req employee.UpdateEmployeeRequest) error {

@@ -90,6 +90,39 @@ func (r *PostgresEmployeeRepo) FindByEmail(ctx context.Context, email string) (*
 	return rec.ToDomain()
 }
 
+func (r *PostgresEmployeeRepo) FindAll(ctx context.Context) ([]*domain.Employee, error) {
+	query := `
+		SELECT id, name, email, password, role, position, salary, status,
+		       birthdate, address, city, province, phone_number, photo,
+		       created_at, updated_at, deleted_at
+		FROM employees
+		WHERE deleted_at IS NULL
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query employees: %w", err)
+	}
+	defer rows.Close()
+
+	// Use pgx.CollectRows to fetch all rows and map them to EmployeeRecord slice
+	records, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[record.EmployeeRecord])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect employee records: %w", err)
+	}
+
+	var employees []*domain.Employee
+	for _, rec := range records {
+		emp, err := rec.ToDomain()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert record to domain: %w", err)
+		}
+		employees = append(employees, emp)
+	}
+
+	return employees, nil
+}
+
 func (r *PostgresEmployeeRepo) Update(ctx context.Context, employee *domain.Employee) error {
 	rec := record.FromDomain(employee)
 

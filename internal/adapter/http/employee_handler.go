@@ -106,6 +106,29 @@ func (h *EmployeeHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, resp, "getByEmail retrieved successfully")
 }
 
+func (h *EmployeeHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	employees, err := h.usecase.GetAll(ctx)
+	if err != nil {
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to retrieve employees")
+		return
+	}
+
+	// Convert domain entities to response DTOs
+	var resp []*usecase.EmployeeResponse
+	for _, emp := range employees {
+		resp = append(resp, usecase.FromDomain(emp))
+	}
+
+	// Ensure resp is an empty array if no employees found
+	if resp == nil {
+		resp = []*usecase.EmployeeResponse{}
+	}
+
+	WriteJSON(w, http.StatusOK, resp, "employees retrieved successfully")
+}
+
 func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	// Assume we get the ID from the URL path, e.g., /employees/{id}
 	id := r.URL.Path[len("/employees/"):]

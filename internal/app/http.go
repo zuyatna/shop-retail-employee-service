@@ -43,6 +43,7 @@ func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 
 	mux.HandleFunc("GET /employees/me", authMiddleware(requireAllRoles(http.HandlerFunc(employeeHandler.GetMe))).ServeHTTP)
 	mux.HandleFunc("POST /employees", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Register))).ServeHTTP)
+	mux.HandleFunc("GET /employees", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetAll))).ServeHTTP)
 	mux.HandleFunc("GET /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetByID))).ServeHTTP)
 	mux.HandleFunc("PATCH /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Update))).ServeHTTP)
 	mux.HandleFunc("DELETE /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Delete))).ServeHTTP)
