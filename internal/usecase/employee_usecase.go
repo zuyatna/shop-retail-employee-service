@@ -91,7 +91,7 @@ func (uc *EmployeeUsecase) GetByID(ctx context.Context, id string) (*domain.Empl
 		return nil, fmt.Errorf("findByID ID cannot be empty")
 	}
 
-	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get findByID by ID: %w", err)
 	}
@@ -135,42 +135,19 @@ func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req emp
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to find findByID: %w", err)
 	}
 
-	if req.Name != nil {
-		findByID.SetName(*req.Name)
-	}
-
-	if req.Position != nil {
-		findByID.SetPosition(*req.Position)
-	}
-
-	if req.Salary != nil {
-		findByID.SetSalary(int64(*req.Salary))
-	}
-
-	if req.Address != nil {
-		findByID.SetAddress(*req.Address)
-	}
-
-	if req.City != nil {
-		findByID.SetCity(*req.City)
-	}
-
-	if req.Province != nil {
-		findByID.SetProvince(*req.Province)
-	}
-
-	if req.PhoneNumber != nil {
-		findByID.SetPhoneNumber(*req.PhoneNumber)
-	}
-
-	if req.Photo != nil {
-		findByID.SetPhoto(*req.Photo)
-	}
+	updateIfPresent(req.Name, findByID.SetName)
+	updateIfPresent(req.Position, findByID.SetPosition)
+	updateIfPresent(req.Salary, findByID.SetSalary)
+	updateIfPresent(req.Address, findByID.SetAddress)
+	updateIfPresent(req.City, findByID.SetCity)
+	updateIfPresent(req.Province, findByID.SetProvince)
+	updateIfPresent(req.PhoneNumber, findByID.SetPhoneNumber)
+	updateIfPresent(req.Photo, findByID.SetPhoto)
 
 	if err := uc.repo.Update(ctx, findByID); err != nil {
 		return fmt.Errorf("failed to update findByID in repo: %w", err)
@@ -183,7 +160,7 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	findByID, err := uc.repo.FindByID(ctx, domain.EmployeeID(id))
+	findByID, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to find findByID: %w", err)
 	}
@@ -210,4 +187,10 @@ func parseBirthDate(dateStr string) (*time.Time, error) {
 	}
 
 	return &t, nil
+}
+
+func updateIfPresent[T any](val *T, setter func(T)) {
+	if val != nil {
+		setter(*val)
+	}
 }

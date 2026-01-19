@@ -12,9 +12,10 @@ import (
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/idgen"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
+func NewHandler(pool *pgxpool.Pool, mongoDB *mongo.Database, cfg *config.Config) http.Handler {
 	idGenerator := idgen.NewUUIDv7Generator()
 
 	jwtSigner := &jwtutil.Signer{
@@ -24,13 +25,17 @@ func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	}
 
 	employeeRepo := repo.NewPostgresEmployeeRepo(pool)
+	attendanceRepo := repo.NewMongoAttendanceRepo(mongoDB)
 
 	ctxTimeout := 5 * time.Second // Example timeout, can be from config
+
 	employeeUsecase := usecase.NewEmployeeUsecase(employeeRepo, idGenerator, ctxTimeout)
 	authUsecase := usecase.NewAuthUsecase(employeeRepo, jwtSigner, ctxTimeout)
+	attendanceUsecase := usecase.NewAttendanceUsecase(attendanceRepo, employeeRepo, idGenerator, ctxTimeout)
 
 	employeeHandler := adapterhttp.NewEmployeeHandler(employeeUsecase)
 	authHandler := adapterhttp.NewAuthHandler(authUsecase)
+	attendanceHandler := adapterhttp.NewAttendanceHandler(attendanceUsecase)
 
 	authMiddleware := adapterhttp.AuthMiddleware(jwtSigner)
 
@@ -47,6 +52,9 @@ func NewHandler(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	mux.HandleFunc("GET /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetByID))).ServeHTTP)
 	mux.HandleFunc("PATCH /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Update))).ServeHTTP)
 	mux.HandleFunc("DELETE /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Delete))).ServeHTTP)
+
+	mux.HandleFunc("POST /attendances/checkin", authMiddleware(requireAllRoles(http.HandlerFunc(attendanceHandler.CheckIn))).ServeHTTP)
+	mux.HandleFunc("POST /attendances/checkout", authMiddleware(requireAllRoles(http.HandlerFunc(attendanceHandler.CheckOut))).ServeHTTP)
 
 	return mux
 }

@@ -17,6 +17,9 @@ type Config struct {
 	JWTSecret  string
 	JWTIssuer  string
 	JWTTTL     int // in seconds
+
+	MONGO_URI     string
+	MONGO_DB_NAME string
 }
 
 func Load() *Config {
@@ -32,6 +35,9 @@ func Load() *Config {
 		JWTSecret:  getEnv("JWT_SECRET"),
 		JWTIssuer:  getEnv("JWT_ISSUER"),
 		JWTTTL:     atoiMust(getEnv("JWT_TTL")),
+
+		MONGO_URI:     getEnv("MONGO_URI"),
+		MONGO_DB_NAME: getEnv("MONGO_DB_NAME"),
 	}
 
 	cfg.validate()

@@ -44,7 +44,7 @@ func (r *PostgresEmployeeRepo) Save(ctx context.Context, employee *domain.Employ
 	return err
 }
 
-func (r *PostgresEmployeeRepo) FindByID(ctx context.Context, id domain.EmployeeID) (*domain.Employee, error) {
+func (r *PostgresEmployeeRepo) FindByID(ctx context.Context, id string) (*domain.Employee, error) {
 	query := `
 		SELECT id, name, email, password, role, position, salary, status,
 		       birthdate, address, city, province, phone_number, photo,
@@ -53,7 +53,7 @@ func (r *PostgresEmployeeRepo) FindByID(ctx context.Context, id domain.EmployeeI
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	rows, _ := r.pool.Query(ctx, query, string(id))
+	rows, _ := r.pool.Query(ctx, query, id)
 
 	// Use pgx.CollectOneRow to fetch a single row and map it to EmployeeRecord
 	rec, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[record.EmployeeRecord]) // pgx.RowToStructByNameLax maps columns to struct fields by name
@@ -153,14 +153,14 @@ func (r *PostgresEmployeeRepo) Update(ctx context.Context, employee *domain.Empl
 	return nil
 }
 
-func (r *PostgresEmployeeRepo) Delete(ctx context.Context, id domain.EmployeeID) error {
+func (r *PostgresEmployeeRepo) Delete(ctx context.Context, id string) error {
 	query := `
 		UPDATE employees
 		SET deleted_at = NOW()
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	_, err := r.pool.Exec(ctx, query, string(id))
+	_, err := r.pool.Exec(ctx, query, id)
 
 	return err
 }
