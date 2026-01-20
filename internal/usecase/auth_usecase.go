@@ -51,6 +51,7 @@ func (uc *AuthUsecase) Login(ctx context.Context, email, password string) (strin
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
+	log.Printf("Employee %s logged in successfully", email)
 
 	return token, nil
 }

@@ -21,11 +21,13 @@ func New(cfg *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("Connected to PostgreSQL database")
 
 	mongoDB, err := initMongo(cfg)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("Connected to MongoDB database")
 
 	handler := NewHandler(pool, mongoDB, cfg)
 

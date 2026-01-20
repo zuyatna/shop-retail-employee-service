@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
@@ -79,6 +80,7 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 	if err := uc.repo.Save(ctx, newEmployee); err != nil {
 		return "", fmt.Errorf("failed to save newEmployee: %w", err)
 	}
+	log.Printf("New employee registered: ID=%s, Email=%s \n", id, req.Email)
 
 	return id, nil
 }
@@ -152,6 +154,11 @@ func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req emp
 	if err := uc.repo.Update(ctx, findByID); err != nil {
 		return fmt.Errorf("failed to update findByID in repo: %w", err)
 	}
+	emailLog := ""
+	if req.Email != nil {
+		emailLog = *req.Email
+	}
+	log.Printf("Update employee: ID=%s, Email=%s \n", id, emailLog)
 
 	return nil
 }
@@ -174,6 +181,7 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	if err := uc.repo.Update(ctx, findByID); err != nil {
 		return fmt.Errorf("failed to soft delete findByID: %w", err)
 	}
+	log.Printf("Deleted employee: ID=%s, Email=%s \n", id, findByID.Email())
 
 	return nil
 }

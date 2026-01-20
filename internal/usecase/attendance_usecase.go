@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
@@ -65,6 +66,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 	if err := uc.attendanceRepo.Save(ctx, newAttendance); err != nil {
 		return "", fmt.Errorf("failed to save attendance: %w", err)
 	}
+	log.Printf("Employee %s checked in at %s \n", employeeID, today.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.RFC3339))
 
 	return attendanceID, nil
 }
@@ -92,6 +94,7 @@ func (uc *AttendanceUsecase) CheckOut(ctx context.Context, employeeID string) er
 	if err := uc.attendanceRepo.Update(ctx, attendanceRecord); err != nil {
 		return fmt.Errorf("failed to update attendance record: %w", err)
 	}
+	log.Printf("Attendance %s checked out at %s \n", employeeID, dateOnly.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.RFC3339))
 
 	return nil
 }
