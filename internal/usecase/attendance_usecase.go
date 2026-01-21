@@ -66,7 +66,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 	if err := uc.attendanceRepo.Save(ctx, newAttendance); err != nil {
 		return "", fmt.Errorf("failed to save attendance: %w", err)
 	}
-	log.Printf("Employee %s checked in at %s \n", employeeID, today.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.RFC3339))
+	log.Printf("Employee %s checked in at %s \n", employeeID, today.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.DateTime))
 
 	return attendanceID, nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +15,11 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("No .env file found, fallback to system env")
+	if err := godotenv.Load(); err != nil {
+		// Try loading from root directory if running from cmd/api/
+		if err := godotenv.Load("../../.env"); err != nil {
+			log.Println("No .env file found, fallback to system env")
+		}
 	}
 
 	cfg := config.Load()
@@ -35,7 +37,7 @@ func main() {
 	// Start server
 	go func() {
 		log.Printf("HTTP server running on %s\n", cfg.HTTPAddr)
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen error: %v", err)
 		}
 	}()
