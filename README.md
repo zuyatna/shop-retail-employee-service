@@ -80,7 +80,7 @@ cmd
 Handler → Usecase → Domain(Entity + Interface) → Adapter(DB)
 ```
 
-### Simple Explanation
+## Simple Explanation
 ```
 | Folder         | Tanggung Jawab                |
 | -------------- | ----------------------------- |
@@ -97,7 +97,7 @@ Handler → Usecase → Domain(Entity + Interface) → Adapter(DB)
 | `migrations`   | Infrastruktur DB              |
 ```
 
-### Docker Image
+## Docker Image Postgres
 ```
 docker run --name shop-retail \
   -e POSTGRES_USER=your_user \
@@ -143,3 +143,11 @@ Insert file into database
 
 ### Enter the Container PSQL
 > sudo docker exec -it shop-retail psql -U your_user -d db_name
+
+## Docker Image minIO
+```
+docker run -p 9000:9000 -p 9001:9001 --name minio \
+  -e "MINIO_ROOT_USER=minioadmin" \
+  -e "MINIO_ROOT_PASSWORD=minioadmin" \
+  quay.io/minio/minio server /data --console-address ":9001"
+```
