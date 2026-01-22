@@ -51,7 +51,7 @@ func initMongo(cfg *config.Config) (*mongo.Database, error) {
 	defer cancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(cfg.MONGO_URI).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(cfg.MongoUri).SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
@@ -66,5 +66,5 @@ func initMongo(cfg *config.Config) (*mongo.Database, error) {
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	return client.Database(cfg.MONGO_DB_NAME), nil
+	return client.Database(cfg.MongoDbName), nil
 }

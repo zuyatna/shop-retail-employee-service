@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	adapterhttp "github.com/zuyatna/shop-retail-employee-service/internal/adapter/http"
 	"github.com/zuyatna/shop-retail-employee-service/internal/adapter/repo"
+	"github.com/zuyatna/shop-retail-employee-service/internal/adapter/storage"
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
@@ -27,9 +28,14 @@ func NewHandler(pool *pgxpool.Pool, mongoDB *mongo.Database, cfg *config.Config)
 	employeeRepo := repo.NewPostgresEmployeeRepo(pool)
 	attendanceRepo := repo.NewMongoAttendanceRepo(mongoDB)
 
+	minioStorage, err := storage.NewMinioStorage(cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	ctxTimeout := 5 * time.Second // Example timeout, can be from config
 
-	employeeUsecase := usecase.NewEmployeeUsecase(employeeRepo, idGenerator, ctxTimeout)
+	employeeUsecase := usecase.NewEmployeeUsecase(employeeRepo, minioStorage, idGenerator, ctxTimeout)
 	authUsecase := usecase.NewAuthUsecase(employeeRepo, jwtSigner, ctxTimeout)
 	attendanceUsecase := usecase.NewAttendanceUsecase(attendanceRepo, employeeRepo, idGenerator, ctxTimeout)
 
@@ -51,6 +57,7 @@ func NewHandler(pool *pgxpool.Pool, mongoDB *mongo.Database, cfg *config.Config)
 	mux.HandleFunc("GET /employees", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetAll))).ServeHTTP)
 	mux.HandleFunc("GET /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.GetByID))).ServeHTTP)
 	mux.HandleFunc("PATCH /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Update))).ServeHTTP)
+	mux.HandleFunc("POST /employees/{id}/photo", authMiddleware(requireAllRoles(http.HandlerFunc(employeeHandler.UploadPhoto))).ServeHTTP)
 	mux.HandleFunc("DELETE /employees/{id}", authMiddleware(requirePrivileged(http.HandlerFunc(employeeHandler.Delete))).ServeHTTP)
 
 	mux.HandleFunc("POST /attendances/checkin", authMiddleware(requireAllRoles(http.HandlerFunc(attendanceHandler.CheckIn))).ServeHTTP)

@@ -18,8 +18,14 @@ type Config struct {
 	JWTIssuer  string
 	JWTTTL     int // in seconds
 
-	MONGO_URI     string
-	MONGO_DB_NAME string
+	MongoUri    string
+	MongoDbName string
+
+	MinioEndpoint  string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioBucket    string
+	MinioUseSSL    bool
 }
 
 func Load() *Config {
@@ -36,8 +42,14 @@ func Load() *Config {
 		JWTIssuer:  getEnv("JWT_ISSUER"),
 		JWTTTL:     atoiMust(getEnv("JWT_TTL")),
 
-		MONGO_URI:     getEnv("MONGO_URI"),
-		MONGO_DB_NAME: getEnv("MONGO_DB_NAME"),
+		MongoUri:    getEnv("MONGO_URI"),
+		MongoDbName: getEnv("MONGO_DB_NAME"),
+
+		MinioEndpoint:  getEnv("MINIO_ENDPOINT"),
+		MinioAccessKey: getEnv("MINIO_ACCESS_KEY"),
+		MinioSecretKey: getEnv("MINIO_SECRET_KEY"),
+		MinioBucket:    getEnv("MINIO_BUCKET"),
+		MinioUseSSL:    getEnv("MINIO_USE_SSL") == "true",
 	}
 
 	cfg.validate()

@@ -3,7 +3,9 @@ package adapterhttp
 import (
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/dto/employee"
@@ -160,6 +162,55 @@ func (h *EmployeeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJSON(w, http.StatusOK, nil, "employee updated successfully")
+}
+
+func (h *EmployeeHandler) UploadPhoto(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form with a max memory of 5MB
+	if err := r.ParseMultipartForm(5 << 20); err != nil {
+		WriteErrorJSON(w, http.StatusBadRequest, err, "failed to parse multipart form")
+		return
+	}
+
+	file, header, err := r.FormFile("photo") // "photo" is the key for the uploaded file
+	if err != nil {
+		WriteErrorJSON(w, http.StatusBadRequest, err, "file 'photos' is required")
+		return
+	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			http.Error(w, "failed to close file", http.StatusInternalServerError)
+		}
+	}(file)
+
+	// Extract employee ID from URL path, e.g., /employees/{id}/photo
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 3 {
+		WriteErrorJSON(w, http.StatusBadRequest, nil, "invalid URL path")
+		return
+	}
+
+	// parts[0] = ""
+	// parts[1] = "employees"
+	// parts[2] = "{id}"
+	// parts[3] = "photo"
+	employeeID := parts[2]
+
+	claims, ok := r.Context().Value(UserClaimsKey).(*jwtutil.Claims)
+	if ok && claims.Role == string(domain.RoleStaff) {
+		if claims.UserID != employeeID {
+			WriteErrorJSON(w, http.StatusForbidden, errors.New("forbidden"), "you can only upload your own profile photo")
+			return
+		}
+	}
+
+	err = h.usecase.UploadPhoto(r.Context(), employeeID, file, header.Size, header.Header.Get("Content-Type"), header.Filename)
+	if err != nil {
+		WriteErrorJSON(w, http.StatusInternalServerError, err, "failed to upload photo")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, nil, "photo uploaded successfully")
 }
 
 func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
