@@ -7,8 +7,8 @@ type Attendance struct {
 	EmployeeID   string
 	EmployeeName string
 	Location     string
-	CheckIn      time.Time
-	CheckOut     *time.Time
+	CheckIn      string
+	CheckOut     *string
 	IsLate       bool
 	Date         time.Time
 }
@@ -23,25 +23,29 @@ type CheckInParams struct {
 	EmployeeID   string
 	EmployeeName string
 	Location     string
-	CheckInTime  time.Time
+	CheckInTime  string
 }
 
 func NewAttendance(params CheckInParams) *Attendance {
 	isLate := false
 
+	layout := time.DateTime
+	loc := time.FixedZone("Asia/Jakarta", 7*60*60)
+	checkInTime, _ := time.ParseInLocation(layout, params.CheckInTime, loc)
+
 	limit := time.Date(
-		params.CheckInTime.Year(), params.CheckInTime.Month(), params.CheckInTime.Day(),
-		OfficeStartHour, OfficeStartMinute, 0, 0, params.CheckInTime.Location(),
+		checkInTime.Year(), checkInTime.Month(), checkInTime.Day(),
+		OfficeStartHour, OfficeStartMinute, 0, 0, checkInTime.Location(),
 	)
 
-	if params.CheckInTime.After(limit) {
+	if checkInTime.After(limit) {
 		isLate = true
 	}
 
 	// Extract date only (year, month, day) for the Date field
 	dateOnly := time.Date(
-		params.CheckInTime.Year(), params.CheckInTime.Month(), params.CheckInTime.Day(),
-		0, 0, 0, 0, params.CheckInTime.Location(),
+		checkInTime.Year(), checkInTime.Month(), checkInTime.Day(),
+		0, 0, 0, 0, checkInTime.Location(),
 	)
 
 	return &Attendance{
@@ -55,6 +59,6 @@ func NewAttendance(params CheckInParams) *Attendance {
 	}
 }
 
-func (a *Attendance) SetCheckOut(checkOut time.Time) {
+func (a *Attendance) SetCheckOut(checkOut string) {
 	a.CheckOut = &checkOut
 }

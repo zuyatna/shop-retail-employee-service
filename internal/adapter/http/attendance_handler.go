@@ -38,7 +38,7 @@ func (h *AttendanceHandler) CheckIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, map[string]string{"id": id}, "check-in successful")
+	WriteJSON(w, http.StatusCreated, map[string]string{"mongo id": id}, "check-in successful")
 }
 
 func (h *AttendanceHandler) CheckOut(w http.ResponseWriter, r *http.Request) {

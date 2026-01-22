@@ -39,8 +39,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 		return "", errors.New(EmployeeNotFoundError)
 	}
 
-	today := time.Now()
-	dateOnly := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	today, dateOnly := uc.getJakartaTimeAndDate()
 
 	existingAttendance, err := uc.attendanceRepo.FindByEmployeeIDAndDate(ctx, employeeID, dateOnly)
 	if err != nil {
@@ -66,7 +65,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 	if err := uc.attendanceRepo.Save(ctx, newAttendance); err != nil {
 		return "", fmt.Errorf("failed to save attendance: %w", err)
 	}
-	log.Printf("Employee %s checked in at %s \n", employeeID, today.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.DateTime))
+	log.Printf("Employee %s checked in at %s \n", employeeID, today)
 
 	return attendanceID, nil
 }
@@ -75,8 +74,7 @@ func (uc *AttendanceUsecase) CheckOut(ctx context.Context, employeeID string) er
 	ctx, cancel := context.WithTimeout(ctx, uc.ctxTimeout)
 	defer cancel()
 
-	today := time.Now()
-	dateOnly := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	today, dateOnly := uc.getJakartaTimeAndDate()
 
 	attendanceRecord, err := uc.attendanceRepo.FindByEmployeeIDAndDate(ctx, employeeID, dateOnly)
 	if err != nil {
@@ -94,7 +92,14 @@ func (uc *AttendanceUsecase) CheckOut(ctx context.Context, employeeID string) er
 	if err := uc.attendanceRepo.Update(ctx, attendanceRecord); err != nil {
 		return fmt.Errorf("failed to update attendance record: %w", err)
 	}
-	log.Printf("Attendance %s checked out at %s \n", employeeID, dateOnly.In(time.FixedZone("Asia/Jakarta", 76060)).Format(time.RFC3339))
+	log.Printf("Employee %s checked out at %s \n", employeeID, today)
 
 	return nil
+}
+
+func (uc *AttendanceUsecase) getJakartaTimeAndDate() (string, time.Time) {
+	now := time.Now()
+	today := now.In(time.FixedZone("Asia/Jakarta", 7*60*60)).Format(time.DateTime)
+	dateOnly := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return today, dateOnly
 }

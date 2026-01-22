@@ -21,15 +21,15 @@ func NewMongoAttendanceRepo(db *mongo.Database) *MongoAttendanceRepo {
 }
 
 type attendanceModel struct {
-	ID           string     `bson:"_id,omitempty" json:"id"`
-	EmployeeID   string     `bson:"employee_id" json:"employee_id"`
-	EmployeeName string     `bson:"employee_name" json:"employee_name"`
-	Location     string     `bson:"location" json:"location"`
-	CheckIn      time.Time  `bson:"check_in" json:"check_in"`
-	CheckOut     *time.Time `bson:"check_out,omitempty" json:"check_out,omitempty"`
-	IsLate       bool       `bson:"is_late" json:"is_late"`
-	Date         time.Time  `bson:"date" json:"date"`
-	UpdatedAt    time.Time  `bson:"updated_at" json:"updated_at"`
+	ID           string    `bson:"_id,omitempty" json:"id"`
+	EmployeeID   string    `bson:"employee_id" json:"employee_id"`
+	EmployeeName string    `bson:"employee_name" json:"employee_name"`
+	Location     string    `bson:"location" json:"location"`
+	CheckIn      string    `bson:"check_in" json:"check_in"`
+	CheckOut     *string   `bson:"check_out,omitempty" json:"check_out,omitempty"`
+	IsLate       bool      `bson:"is_late" json:"is_late"`
+	Date         time.Time `bson:"date" json:"date"`
+	UpdatedAt    time.Time `bson:"updated_at" json:"updated_at"`
 }
 
 func (r *MongoAttendanceRepo) Save(ctx context.Context, attendance *domain.Attendance) error {
