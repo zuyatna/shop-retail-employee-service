@@ -38,6 +38,8 @@ type Employee struct {
 	province     string
 	phoneNumber  string
 	photo        string
+	createdAt    time.Time
+	updatedAt    time.Time
 }
 
 type NewEmployeeParams struct {
@@ -204,6 +206,14 @@ func (e *Employee) Photo() string {
 	return e.photo
 }
 
+func (e *Employee) CreatedAt() time.Time {
+	return e.createdAt
+}
+
+func (e *Employee) UpdatedAt() time.Time {
+	return e.updatedAt
+}
+
 func isValidEmail(email string) bool {
 	return strings.Contains(email, "@")
 }
@@ -268,6 +278,8 @@ type ReconstituteEmployeeParams struct {
 	Province     string
 	PhoneNumber  string
 	Photo        string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func ReconstituteEmployee(p ReconstituteEmployeeParams) (*Employee, error) {
@@ -286,5 +298,7 @@ func ReconstituteEmployee(p ReconstituteEmployeeParams) (*Employee, error) {
 		province:     p.Province,
 		phoneNumber:  p.PhoneNumber,
 		photo:        p.Photo,
+		createdAt:    p.CreatedAt,
+		updatedAt:    p.UpdatedAt,
 	}, nil
 }

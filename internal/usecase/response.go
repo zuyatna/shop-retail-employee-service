@@ -44,5 +44,7 @@ func FromDomain(e *domain.Employee) *EmployeeResponse {
 		Province:    e.Province(),
 		PhoneNumber: string(e.PhoneNumber()),
 		Photo:       e.Photo(),
+		CreatedAt:   e.CreatedAt(),
+		UpdatedAt:   e.UpdatedAt(),
 	}
 }

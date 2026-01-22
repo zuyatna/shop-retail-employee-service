@@ -73,6 +73,8 @@ func (r *EmployeeRecord) ToDomain() (*domain.Employee, error) {
 		Province:     r.Province.String,
 		PhoneNumber:  r.PhoneNumber.String,
 		Photo:        r.Photo.String,
+		CreatedAt:    r.CreatedAt,
+		UpdatedAt:    r.UpdatedAt,
 	})
 }
 
