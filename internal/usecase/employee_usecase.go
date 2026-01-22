@@ -2,12 +2,13 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"log"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -43,7 +44,7 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 
 	existing, err := uc.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		if err.Error() != EmployeeNotFoundError {
+		if errors.Is(err, EmployeeNotFoundError) {
 			return "", fmt.Errorf("failed to check existing email: %w", err)
 		}
 	}
@@ -88,7 +89,7 @@ func (uc *EmployeeUsecase) Register(ctx context.Context, req employee.CreateEmpl
 	if err := uc.repo.Save(ctx, newEmployee); err != nil {
 		return "", fmt.Errorf("failed to save newEmployee: %w", err)
 	}
-	log.Printf("New employee registered: ID=%s, Email=%s \n", id, req.Email)
+	slog.Log(ctx, slog.LevelInfo, "Registered new employee", "ID", id, "Email", req.Email)
 
 	return id, nil
 }
@@ -107,7 +108,7 @@ func (uc *EmployeeUsecase) GetByID(ctx context.Context, id string) (*domain.Empl
 	}
 
 	if findByID == nil {
-		return nil, fmt.Errorf(EmployeeNotFoundError)
+		return nil, EmployeeNotFoundError
 	}
 
 	return findByID, nil
@@ -123,7 +124,7 @@ func (uc *EmployeeUsecase) GetByEmail(ctx context.Context, email string) (*domai
 	}
 
 	if findByEmail == nil {
-		return nil, fmt.Errorf(EmployeeNotFoundError)
+		return nil, EmployeeNotFoundError
 	}
 
 	return findByEmail, nil
@@ -166,7 +167,7 @@ func (uc *EmployeeUsecase) UpdateProfile(ctx context.Context, id string, req emp
 	if req.Email != nil {
 		emailLog = *req.Email
 	}
-	log.Printf("Update employee: ID=%s, Email=%s \n", id, emailLog)
+	slog.Log(ctx, slog.LevelInfo, "Updated employee profile", "ID", id, "Email", emailLog)
 
 	return nil
 }
@@ -218,7 +219,7 @@ func (uc *EmployeeUsecase) UploadPhoto(ctx context.Context, employeeID string, f
 			return fmt.Errorf("failed to find employee by ID: %w", err)
 		}
 		if existingEmployee == nil {
-			return fmt.Errorf(EmployeeNotFoundError)
+			return EmployeeNotFoundError
 		}
 
 		existingEmployee.SetPhoto(fileURL)
@@ -226,8 +227,6 @@ func (uc *EmployeeUsecase) UploadPhoto(ctx context.Context, employeeID string, f
 		if err := uc.repo.Update(ctx, existingEmployee); err != nil {
 			return fmt.Errorf("failed to update employee photo URL: %w", err)
 		}
-
-		log.Printf("Uploaded photo for employee ID=%s, URL=%s \n", employeeID, fileURL)
 
 		return nil
 	}
@@ -243,7 +242,7 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	}
 
 	if findByID == nil {
-		return fmt.Errorf(EmployeeNotFoundError)
+		return EmployeeNotFoundError
 	}
 
 	findByID.Delete()
@@ -251,7 +250,7 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	if err := uc.repo.Update(ctx, findByID); err != nil {
 		return fmt.Errorf("failed to soft delete findByID: %w", err)
 	}
-	log.Printf("Deleted employee: ID=%s, Email=%s \n", id, findByID.Email())
+	slog.Log(ctx, slog.LevelInfo, "Deleted employee with ID: %s", id)
 
 	return nil
 }

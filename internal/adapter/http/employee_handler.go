@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-playground/validator"
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/dto/employee"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
@@ -16,6 +17,8 @@ import (
 type EmployeeHandler struct {
 	usecase *usecase.EmployeeUsecase
 }
+
+var validate = validator.New()
 
 func NewEmployeeHandler(uc *usecase.EmployeeUsecase) *EmployeeHandler {
 	return &EmployeeHandler{
@@ -34,7 +37,7 @@ func (h *EmployeeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	getByID, err := h.usecase.GetByID(ctx, claims.UserID)
 	if err != nil {
-		if err.Error() == usecase.EmployeeNotFoundError {
+		if errors.Is(err, usecase.EmployeeNotFoundError) {
 			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
 			return
 		}
@@ -52,6 +55,11 @@ func (h *EmployeeHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req employee.CreateEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteErrorJSON(w, http.StatusBadRequest, err, "invalid request payload")
+		return
+	}
+
+	if err := validate.Struct(req); err != nil {
+		WriteErrorJSON(w, http.StatusBadRequest, err, "validation error")
 		return
 	}
 
@@ -74,7 +82,7 @@ func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	getByID, err := h.usecase.GetByID(ctx, id)
 	if err != nil {
-		if err.Error() == usecase.EmployeeNotFoundError {
+		if errors.Is(err, usecase.EmployeeNotFoundError) {
 			WriteErrorJSON(w, http.StatusNotFound, err, "getByID not found")
 			return
 		}
@@ -95,7 +103,7 @@ func (h *EmployeeHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 
 	getByEmail, err := h.usecase.GetByEmail(ctx, email)
 	if err != nil {
-		if err.Error() == usecase.EmployeeNotFoundError {
+		if errors.Is(err, usecase.EmployeeNotFoundError) {
 			WriteErrorJSON(w, http.StatusNotFound, err, "getByEmail not found")
 			return
 		}
@@ -225,7 +233,7 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.usecase.Delete(ctx, id)
 	if err != nil {
-		if err.Error() == usecase.EmployeeNotFoundError {
+		if errors.Is(err, usecase.EmployeeNotFoundError) {
 			WriteErrorJSON(w, http.StatusNotFound, err, "employee not found")
 			return
 		}

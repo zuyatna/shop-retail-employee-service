@@ -1,5 +1,7 @@
 package usecase
 
-const (
-	EmployeeNotFoundError = "employee not found"
+import "errors"
+
+var (
+	EmployeeNotFoundError = errors.New("employee not found")
 )

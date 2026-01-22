@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
@@ -36,7 +36,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 		return "", fmt.Errorf("failed to find employee by id: %w", err)
 	}
 	if employee == nil {
-		return "", errors.New(EmployeeNotFoundError)
+		return "", EmployeeNotFoundError
 	}
 
 	today, dateOnly := uc.getJakartaTimeAndDate()
@@ -65,7 +65,7 @@ func (uc *AttendanceUsecase) CheckIn(ctx context.Context, employeeID string, req
 	if err := uc.attendanceRepo.Save(ctx, newAttendance); err != nil {
 		return "", fmt.Errorf("failed to save attendance: %w", err)
 	}
-	log.Printf("Employee %s checked in at %s \n", employeeID, today)
+	slog.Log(ctx, slog.LevelInfo, "Employee checked in", "employeeID", employeeID, "time", today)
 
 	return attendanceID, nil
 }
@@ -92,7 +92,7 @@ func (uc *AttendanceUsecase) CheckOut(ctx context.Context, employeeID string) er
 	if err := uc.attendanceRepo.Update(ctx, attendanceRecord); err != nil {
 		return fmt.Errorf("failed to update attendance record: %w", err)
 	}
-	log.Printf("Employee %s checked out at %s \n", employeeID, today)
+	slog.Log(ctx, slog.LevelInfo, "Employee checked out", "employeeID", employeeID, "time", today)
 
 	return nil
 }
