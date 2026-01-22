@@ -6,7 +6,7 @@ Manage employee shop retail
 shop-retail-employee/
 ├── cmd/
 │   └── api/
-│       └── main.go                 # entry point (tipis)
+│       └── main.go                 # entry point
 │
 ├── internal/
 │   ├── app/                        # composition root
