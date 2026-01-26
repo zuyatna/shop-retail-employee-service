@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -26,9 +27,20 @@ type Config struct {
 	MinioSecretKey string
 	MinioBucket    string
 	MinioUseSSL    bool
+
+	OfficeStartHour int
+	OfficeStartMin  int
+
+	AppTimezone *time.Location
 }
 
 func Load() *Config {
+	timezoneString := getEnvOrDefault("APP_TIMEZONE", "Asia/Jakarta")
+	loc, err := time.LoadLocation(timezoneString)
+	if err != nil {
+		loc = time.FixedZone(timezoneString, 7*60*60) // Fallback to WIB
+	}
+
 	cfg := &Config{
 		AppEnv:     getEnv("APP_ENV"),
 		HTTPAddr:   getEnv("HTTP_ADDR"),
@@ -50,6 +62,11 @@ func Load() *Config {
 		MinioSecretKey: getEnv("MINIO_SECRET_KEY"),
 		MinioBucket:    getEnv("MINIO_BUCKET"),
 		MinioUseSSL:    getEnv("MINIO_USE_SSL") == "true",
+
+		OfficeStartHour: atoiOrDefault(getEnv("OFFICE_START_HOUR"), 9),
+		OfficeStartMin:  atoiOrDefault(getEnv("OFFICE_START_MIN"), 0),
+
+		AppTimezone: loc,
 	}
 
 	cfg.validate()
@@ -82,11 +99,28 @@ func getEnv(key string) string {
 	return value
 }
 
+func getEnvOrDefault(key, defaultValue string) string {
+	value, ok := os.LookupEnv(key)
+	if !ok || value == "" {
+		return defaultValue
+	}
+	return value
+}
+
 func atoiMust(s string) int {
 	var i int
 	_, err := fmt.Sscanf(s, "%d", &i)
 	if err != nil {
 		panic(fmt.Sprintf("invalid integer value: %s", s))
+	}
+	return i
+}
+
+func atoiOrDefault(s string, defaultValue int) int {
+	var i int
+	_, err := fmt.Sscanf(s, "%d", &i)
+	if err != nil {
+		return defaultValue
 	}
 	return i
 }

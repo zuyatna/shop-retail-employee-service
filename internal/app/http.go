@@ -11,6 +11,7 @@ import (
 	"github.com/zuyatna/shop-retail-employee-service/internal/config"
 	"github.com/zuyatna/shop-retail-employee-service/internal/domain"
 	"github.com/zuyatna/shop-retail-employee-service/internal/usecase"
+	"github.com/zuyatna/shop-retail-employee-service/internal/util/clock"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/idgen"
 	"github.com/zuyatna/shop-retail-employee-service/internal/util/jwtutil"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,6 +19,8 @@ import (
 
 func NewHandler(pool *pgxpool.Pool, mongoDB *mongo.Database, cfg *config.Config) http.Handler {
 	idGenerator := idgen.NewUUIDv7Generator()
+
+	realClock := clock.RealClock{}
 
 	jwtSigner := &jwtutil.Signer{
 		Secret: []byte(cfg.JWTSecret),
@@ -37,7 +40,7 @@ func NewHandler(pool *pgxpool.Pool, mongoDB *mongo.Database, cfg *config.Config)
 
 	employeeUsecase := usecase.NewEmployeeUsecase(employeeRepo, minioStorage, idGenerator, ctxTimeout)
 	authUsecase := usecase.NewAuthUsecase(employeeRepo, jwtSigner, ctxTimeout)
-	attendanceUsecase := usecase.NewAttendanceUsecase(attendanceRepo, employeeRepo, idGenerator, ctxTimeout)
+	attendanceUsecase := usecase.NewAttendanceUsecase(attendanceRepo, employeeRepo, idGenerator, cfg, realClock, ctxTimeout)
 
 	employeeHandler := adapterhttp.NewEmployeeHandler(employeeUsecase)
 	authHandler := adapterhttp.NewAuthHandler(authUsecase)

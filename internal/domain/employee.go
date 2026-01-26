@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"net/mail"
 	"strings"
 	"time"
 )
@@ -215,7 +216,8 @@ func (e *Employee) UpdatedAt() time.Time {
 }
 
 func isValidEmail(email string) bool {
-	return strings.Contains(email, "@")
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 func isValidRole(role Role) bool {
