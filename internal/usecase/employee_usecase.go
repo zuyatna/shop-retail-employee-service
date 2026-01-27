@@ -250,7 +250,7 @@ func (uc *EmployeeUsecase) Delete(ctx context.Context, id string) error {
 	if err := uc.repo.Update(ctx, findByID); err != nil {
 		return fmt.Errorf("failed to soft delete findByID: %w", err)
 	}
-	slog.Log(ctx, slog.LevelInfo, "Deleted employee with ID: %s", id)
+	slog.Log(ctx, slog.LevelInfo, "Deleted employee", "ID", id)
 
 	return nil
 }
