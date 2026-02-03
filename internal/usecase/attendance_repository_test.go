@@ -26,7 +26,7 @@ func (m *MockAttendanceRepo) Update(ctx context.Context, attendance *domain.Atte
 	return args.Error(0)
 }
 
-func (m *MockAttendanceRepo) FindByEmployeeIDAndDate(ctx context.Context, employeeID int64, date string) (*domain.Attendance, error) {
+func (m *MockAttendanceRepo) FindByEmployeeIDAndDate(ctx context.Context, employeeID string, date time.Time) (*domain.Attendance, error) {
 	args := m.Called(ctx, employeeID, date)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

@@ -106,10 +106,3 @@ func (uc *AttendanceUsecase) CheckOut(ctx context.Context, employeeID string) er
 
 	return nil
 }
-
-func (uc *AttendanceUsecase) getJakartaTimeAndDate() (string, time.Time) {
-	now := time.Now()
-	today := now.In(time.FixedZone("Asia/Jakarta", 7*60*60)).Format(time.DateTime)
-	dateOnly := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	return today, dateOnly
-}
