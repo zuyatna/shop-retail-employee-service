@@ -79,9 +79,9 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 	// Setup Config & Timezone
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	cfg := &config.Config{
-		AppTimezone: loc,
+		AppTimezone:     loc,
 		OfficeStartHour: 9, // 9 AM
-		OfficeStartMin: 0,
+		OfficeStartMin:  0,
 	}
 
 	simulateDate := time.Date(2026, 10, 10, 0, 0, 0, 0, loc) // June 10, 2026 00:00:00
@@ -93,7 +93,7 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 
 	t.Run("Success - On Time", func(t *testing.T) {
 		mockTime := time.Date(2026, 10, 10, 8, 55, 0, 0, loc) // June 10, 2026 08:55:00
-		mockClock:= MockClock{currentTime: mockTime}
+		mockClock := MockClock{currentTime: mockTime}
 
 		uc := usecase.NewAttendanceUsecase(mockAttRepo, mockEmpRepo, mockIDGen, cfg, mockClock, time.Second)
 
@@ -101,10 +101,10 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 		mockEmpRepo.On("FindByID", mock.Anything, employeeID).Return(emp, nil).Once()
 
 		mockAttRepo.On("FindByEmployeeIDAndDate", mock.Anything, employeeID, simulateDate).Return(nil, nil).Once()
-		
+
 		mockIDGen.On("NewID").Return("att-123", nil).Once()
 
-		mockAttRepo.On("Save", mock.Anything, mock.MatchedBy(func(a *domain.Attendance) bool{
+		mockAttRepo.On("Save", mock.Anything, mock.MatchedBy(func(a *domain.Attendance) bool {
 			return a.IsLate == false && a.EmployeeID == employeeID
 		})).Return(nil).Once()
 
@@ -119,7 +119,7 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 
 	t.Run("Success - Late", func(t *testing.T) {
 		mockTime := time.Date(2026, 10, 10, 9, 15, 0, 0, loc) // June 10, 2026 09:15:00
-		mockClock:= MockClock{currentTime: mockTime}
+		mockClock := MockClock{currentTime: mockTime}
 
 		uc := usecase.NewAttendanceUsecase(mockAttRepo, mockEmpRepo, mockIDGen, cfg, mockClock, time.Second)
 
@@ -127,10 +127,10 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 		mockEmpRepo.On("FindByID", mock.Anything, employeeID).Return(emp, nil).Once()
 
 		mockAttRepo.On("FindByEmployeeIDAndDate", mock.Anything, employeeID, simulateDate).Return(nil, nil).Once()
-		
+
 		mockIDGen.On("NewID").Return("att-124", nil).Once()
 
-		mockAttRepo.On("Save", mock.Anything, mock.MatchedBy(func(a *domain.Attendance) bool{
+		mockAttRepo.On("Save", mock.Anything, mock.MatchedBy(func(a *domain.Attendance) bool {
 			return a.IsLate == true && a.EmployeeID == employeeID
 		})).Return(nil).Once()
 
@@ -145,7 +145,7 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 
 	t.Run("Fail - Already Checked In", func(t *testing.T) {
 		mockTime := time.Date(2026, 10, 10, 8, 55, 0, 0, loc) // June 10, 2026 08:55:00
-		mockClock:= MockClock{currentTime: mockTime}
+		mockClock := MockClock{currentTime: mockTime}
 
 		uc := usecase.NewAttendanceUsecase(mockAttRepo, mockEmpRepo, mockIDGen, cfg, mockClock, time.Second)
 
@@ -154,7 +154,7 @@ func TestAttendanceUsecase_CheckIn(t *testing.T) {
 
 		existingAttendance := &domain.Attendance{}
 		mockAttRepo.On("FindByEmployeeIDAndDate", mock.Anything, employeeID, simulateDate).Return(existingAttendance, nil).Once()
-		
+
 		id, err := uc.CheckIn(context.Background(), employeeID, req)
 
 		assert.Error(t, err)
