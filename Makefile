@@ -10,9 +10,11 @@
 # On Windows, you might need to set them manually or use a script.
 
 # Go variables
-MODULE_PATH=github.com/zuyatna/shop-retail-employee-service
+GO ?= go
+PKGS ?= ./...
+MAIN ?= ./cmd/api
 
-.PHONY: help run docker-up docker-down migrate
+.PHONY: help fmt fmt-check vet test check run docker-up docker-down migrate
 
 all: help
 
@@ -20,7 +22,12 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  run          - Run the Go application (loads .env file)."
+	@echo "  fmt          - Format Go code in-place (gofmt)."
+	@echo "  fmt-check    - Check formatting (runs go fmt; keeps check cross-platform)."
+	@echo "  vet          - Run static checks (go vet)."
+	@echo "  test         - Run all test cases (go test)."
+	@echo "  check        - Run fmt-check + vet + test (recommended before run)."
+	@echo "  run          - Run the Go application (runs check first)."
 	@echo "  docker-up    - Start PostgreSQL container (requires DB_* env vars)."
 	@echo "  docker-down  - Stop and remove PostgreSQL container."
 	@echo "  migrate      - Apply database migrations (requires DB_* env vars)."
@@ -28,9 +35,27 @@ help:
 	@echo "Note: For 'docker-up' and 'migrate', ensure DB_USER, DB_PASSWORD, and DB_NAME are set in your environment."
 
 
-run:
+fmt:
+	@echo "Formatting Go packages (go fmt)..."
+	@$(GO) fmt $(PKGS)
+
+fmt-check:
+	@echo "Checking formatting (go fmt)..."
+	@$(GO) fmt $(PKGS)
+
+vet:
+	@echo "Running go vet..."
+	@$(GO) vet $(PKGS)
+
+test:
+	@echo "Running tests..."
+	@$(GO) test $(PKGS)
+
+check: fmt-check vet test
+
+run: check
 	@echo "Running the Go application..."
-	go run $(MODULE_PATH)/cmd/api
+	@$(GO) run $(MAIN)
 
 
 docker-up:
