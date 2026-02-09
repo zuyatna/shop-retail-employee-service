@@ -151,3 +151,8 @@ docker run -p 9000:9000 -p 9001:9001 --name minio \
   -e "MINIO_ROOT_PASSWORD=minioadmin" \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
+
+## Docker Image RabbitMQ
+```
+docker run -d --hostname my-rabbit --name shop-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
