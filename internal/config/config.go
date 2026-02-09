@@ -32,6 +32,8 @@ type Config struct {
 	OfficeStartMin  int
 
 	AppTimezone *time.Location
+
+	RabbitMQURL string
 }
 
 func Load() *Config {
